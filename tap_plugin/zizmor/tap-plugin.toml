@@ -14,7 +14,8 @@ depends_on = [
 
 # The author's DECLARED crypto posture (req-tap-plugin-manifest-v0-fips; spec-fips.md declare-vs-decide).
 # The zizmor PyPI wheel is one static Rust binary that links `ring` and `aws-lc-rs` for TLS
-# (observed in zizmor's Cargo.lock, 2026-09-02). aws-lc has a FIPS-validated module, but the
+# (observed in zizmor's Cargo.lock, 2026-09-02; the boot-time crypto-BOM scan reports ring's core as
+# `boringssl` and aws-lc-rs as `rust-aws-lc-rs` — the provider names below are the scanner's). aws-lc has a FIPS-validated module, but the
 # wheel is built against the non-FIPS `aws-lc-sys` (reqwest default features), and `ring` is
 # never validated — so the binary is NOT the validated module even though the library it embeds
 # is validatable. This plugin invokes `zizmor --offline`, so the providers are present but never
@@ -23,7 +24,7 @@ depends_on = [
 # declaration becomes load-bearing.
 [fips]
 status = "uses-nonvalidated"
-providers = ["rust-ring", "rust-aws-lc-rs"]
+providers = ["boringssl", "rust-aws-lc-rs"]
 reason = "The zizmor wheel embeds a Rust binary linking ring and aws-lc-rs (non-FIPS build) for TLS in its online audits; this plugin runs zizmor --offline, so the providers are present but never execute a security operation. A FIPS deployment waives per plugin in the boot profile."
 
 # [models], [edges], [grift], [collectors] and panel registration land with their requirements:
