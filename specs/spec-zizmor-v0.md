@@ -93,8 +93,8 @@ is real.
 | req-zizmor-collector | [Offline Derived Collector](#offline-derived-collector) | Proposed | Materialize `raw_yaml` per repo → `zizmor --offline --format json-v1` → GRIFT batch |
 | req-zizmor-trigger | [Own Schedule, With A Staleness Guard](#own-schedule-with-a-staleness-guard) | Proposed | Seeded `schedule` node + boot-record first light; a run names the github_core collection it read and skips while one is active |
 | req-zizmor-record | [A Corpus-Fed Boot Record That Fires](#a-corpus-fed-boot-record-that-fires) | Proposed | In-package record seeds a corpus bundle of known-bad workflows and fires the collector offline; expected audit IDs derive from zizmor's own test corpus; the suite runs the same population in the boot-and-test leg |
-| req-zizmor-finding | [The Finding Node](#the-finding-node) | Proposed | `zizmor__finding` with provenance fields; edges to run, workflow and job. A compliance-level node in disguise — see the implementation note |
-| req-zizmor-run | [Runs Are First-Class](#runs-are-first-class) | Proposed | One `zizmor__run` per execution; findings and scanned workflows hang off it; unevaluated = not observed by this scanner |
+| req-zizmor-finding | [The Finding Node](#the-finding-node) | In Development | `zizmor__finding` with provenance fields; edges to run, workflow and job. A compliance-level node in disguise — see the implementation note |
+| req-zizmor-run | [Runs Are First-Class](#runs-are-first-class) | In Development | One `zizmor__run` per execution; findings and scanned workflows hang off it; unevaluated = not observed by this scanner |
 | req-zizmor-page-landing | [Page: Landing](#page-landing) | Proposed | `/zizmor` — about, findings table, runs table; every cell drills in |
 | req-zizmor-page-run | [Page: Run](#page-run) | Proposed | `/zizmor/runs/<run_id>` — summary + detail of one run |
 | req-zizmor-page-finding | [Page: Finding](#page-finding) | Proposed | `/zizmor/findings/<finding_id>` — one finding in full |
@@ -255,7 +255,7 @@ bundle and zizmor's record seeds it from there.
 ----
 RID: `req-zizmor-finding`
 
-Status: `Proposed`
+Status: `In Development`
 
 A typed node `zizmor__finding` (BaseModel, table-prefixed per type ownership) carrying: `audit_id`,
 `audit_url`, `severity`, `confidence`, `persona`, `scanner_version`, `summary`, `location` (path,
@@ -306,7 +306,7 @@ never a shape derived from the absence of a finding.
 ----
 RID: `req-zizmor-run`
 
-Status: `Proposed`
+Status: `In Development`
 
 Each collector execution lands one `zizmor__run` node: scanner version, persona, audit set,
 started/finished, the github_core collection job it read, the repositories and workflows it covered,

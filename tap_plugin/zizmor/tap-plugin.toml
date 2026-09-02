@@ -27,6 +27,10 @@ status = "uses-nonvalidated"
 providers = ["boringssl", "rust-aws-lc-rs"]
 reason = "The zizmor wheel embeds a Rust binary linking ring and aws-lc-rs (non-FIPS build) for TLS in its online audits; this plugin runs zizmor --offline, so the providers are present but never execute a security operation. A FIPS deployment waives per plugin in the boot profile."
 
-# [models], [edges], [grift], [collectors] and panel registration land with their requirements:
-# req-zizmor-finding, req-zizmor-run, req-zizmor-pages / req-zizmor-panel-*, req-zizmor-trigger,
-# req-zizmor-record.
+[models]
+zizmor__finding = "tap_plugin.zizmor.models.finding.ZizmorFinding"
+zizmor__run = "tap_plugin.zizmor.models.run.ZizmorRun"
+
+# [edges], [grift], collector and panel registration land with their requirements:
+# req-zizmor-finding (edges), req-zizmor-run (edges), req-zizmor-pages / req-zizmor-panel-*,
+# req-zizmor-trigger, req-zizmor-record.
