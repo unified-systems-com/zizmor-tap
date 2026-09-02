@@ -73,6 +73,10 @@ class TestZizmorFinding:
         result = create_node(FINDING, _finding_payload(fixes=[{"title": "x", "disposition": "maybe"}]))
         assert not result.success
 
+    def test_location_and_fixes_require_their_core_fields(self) -> None:
+        assert not create_node(FINDING, _finding_payload(location={})).success
+        assert not create_node(FINDING, _finding_payload(fixes=[{}])).success
+
     def test_name_resyncs_on_save(self) -> None:
         result = create_node(FINDING, _finding_payload())
         assert result.success
@@ -96,6 +100,7 @@ class TestZizmorRun:
                 "outcome": "ok",
                 "source_collection_job": "01a062f9-c662-7759-a7b0-bc0bdc2a2dd3",
                 "started_at": "2026-09-02T21:40:00Z",
+                "finished_at": "2026-09-02T21:40:01Z",
                 "repositories_scanned": 17,
                 "workflows_evaluated": 50,
                 "workflows_no_yaml": 39,
@@ -106,6 +111,29 @@ class TestZizmorRun:
         entity = Entity.objects.get(id=result.entity_id)
         assert entity.name == "zizmor 1.30.0 (auditor) 2026-09-02 21:40"
         assert entity.dimensions.get("github.observation") == "declaration"
+
+    def test_completed_outcome_requires_evidence_of_a_scan(self) -> None:
+        """An `ok` run with no source, no audit set and no coverage is a lie the model refuses."""
+        empty_ok = create_node(RUN, {"scanner_version": "1.30.0", "persona": "Auditor", "outcome": "ok"})
+        assert not empty_ok.success
+        no_source = create_node(
+            RUN,
+            {
+                "scanner_version": "1.30.0",
+                "persona": "Auditor",
+                "outcome": "ok",
+                "audit_set": ["unpinned-uses"],
+                "started_at": "2026-09-02T21:40:00Z",
+                "finished_at": "2026-09-02T21:40:01Z",
+                "workflows_evaluated": 1,
+            },
+        )
+        assert not no_source.success
+        negative_count_value = create_node(
+            RUN,
+            {"scanner_version": "1.30.0", "persona": "Auditor", "counts_by_severity": {"High": -1}},
+        )
+        assert not negative_count_value.success
 
     def test_outcome_enum_and_non_negative_counts(self) -> None:
         bad_outcome = create_node(RUN, {"scanner_version": "1.30.0", "persona": "Auditor", "outcome": "green"})

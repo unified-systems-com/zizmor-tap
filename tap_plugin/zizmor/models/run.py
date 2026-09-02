@@ -7,12 +7,18 @@ collection it read, and the counts its findings must add up to (req-zizmor-run).
 
 from typing import Any, ClassVar
 
+from django.core.exceptions import ValidationError
 from django.db import models
 from tap_plugin.zizmor.models.finding import PERSONAS
 
 from tap_grid.models import BaseModel
 
 OUTCOMES: tuple[str, ...] = ("running", "ok", "partial", "failed", "skipped")
+# Outcomes that assert a scan happened. An `ok` run with no coverage, no source and no audit set
+# would be a successful execution that did no recorded work — the precise lie this model exists to
+# make impossible (req-zizmor-run: "counts match", "not scanned is visible").
+COMPLETED_OUTCOMES: tuple[str, ...] = ("ok", "partial")
+_COUNTS_SCHEMA: dict[str, Any] = {"type": "object", "additionalProperties": {"type": "integer", "minimum": 0}}
 
 
 class ZizmorRun(BaseModel):
@@ -55,8 +61,8 @@ class ZizmorRun(BaseModel):
         "workflows_parse_failed": {"type": "integer", "minimum": 0},
         "workflows_skipped": {"type": "integer", "minimum": 0},
         "workflows_no_yaml": {"type": "integer", "minimum": 0},
-        "counts_by_audit": {"type": "object"},
-        "counts_by_severity": {"type": "object"},
+        "counts_by_audit": _COUNTS_SCHEMA,
+        "counts_by_severity": _COUNTS_SCHEMA,
         "tags": {"type": "object"},
     }
     FIELD_VALIDATION_SCHEMA: ClassVar[dict[str, Any]] = {
@@ -71,8 +77,8 @@ class ZizmorRun(BaseModel):
         "workflows_parse_failed": {"validation": "jsonschema", "schema": {"type": "integer", "minimum": 0}},
         "workflows_skipped": {"validation": "jsonschema", "schema": {"type": "integer", "minimum": 0}},
         "workflows_no_yaml": {"validation": "jsonschema", "schema": {"type": "integer", "minimum": 0}},
-        "counts_by_audit": {"validation": "jsonschema", "schema": {"type": "object"}},
-        "counts_by_severity": {"validation": "jsonschema", "schema": {"type": "object"}},
+        "counts_by_audit": {"validation": "jsonschema", "schema": _COUNTS_SCHEMA},
+        "counts_by_severity": {"validation": "jsonschema", "schema": _COUNTS_SCHEMA},
         "tags": {"validation": "jsonschema", "schema": {"type": "object"}},
         # Datetime fields are typed Django DateTimeFields — their own validation applies.
     }
@@ -102,6 +108,33 @@ class ZizmorRun(BaseModel):
 
     class Meta(BaseModel.Meta):
         db_table = "zizmor__run"
+
+    def validate(self) -> None:
+        """Cross-field invariants: a completed outcome must carry evidence of the scan.
+
+        `ok` / `partial` require the source collection it read, the audit set it ran, start and
+        finish times, and at least one workflow accounted for (evaluated, parse-failed, skipped or
+        no-yaml). Any outcome other than `running` requires `started_at`.
+        """
+        errors: dict[str, list[str]] = {}
+        if self.outcome != "running" and self.started_at is None:
+            errors["started_at"] = [f"outcome '{self.outcome}' asserts an execution happened; started_at is required."]
+        if self.outcome in COMPLETED_OUTCOMES:
+            if not self.source_collection_job:
+                errors["source_collection_job"] = ["a completed run must name the github_core collection job it read."]
+            if not self.audit_set:
+                errors["audit_set"] = ["a completed run must record the audit set it ran."]
+            if self.finished_at is None:
+                errors["finished_at"] = ["a completed run must record when it finished."]
+            accounted = (
+                self.workflows_evaluated + self.workflows_parse_failed + self.workflows_skipped + self.workflows_no_yaml
+            )
+            if accounted <= 0:
+                errors["workflows_evaluated"] = [
+                    "a completed run must account for at least one workflow (evaluated, parse-failed, skipped or no-yaml)."
+                ]
+        if errors:
+            raise ValidationError(errors)
 
     def get_name(self) -> str:
         when = self.started_at.strftime("%Y-%m-%d %H:%M") if self.started_at else "unstarted"

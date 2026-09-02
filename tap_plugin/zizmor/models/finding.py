@@ -40,6 +40,9 @@ _LOCATION_SCHEMA: dict[str, Any] = {
         "feature": {"type": ["string", "null"], "description": "The source text at the site, as zizmor reported it."},
         "annotation": {"type": ["string", "null"], "description": "zizmor's annotation for the location."},
     },
+    # A location that names no file and no route is not a location; the rest may legitimately be
+    # absent (zizmor reports some findings at the workflow level with no row/column).
+    "required": ["path", "route"],
     "additionalProperties": True,
 }
 
@@ -51,6 +54,7 @@ _FIXES_SCHEMA: dict[str, Any] = {
             "title": {"type": "string"},
             "disposition": {"type": "string", "enum": ["safe", "unsafe"]},
         },
+        "required": ["title", "disposition"],
         "additionalProperties": True,
     },
 }
