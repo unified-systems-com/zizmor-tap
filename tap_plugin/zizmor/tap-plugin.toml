@@ -1,0 +1,31 @@
+manifest_version = "0"
+plugin_version = "0.1.0"
+slug = "zizmor"
+name = "TAP zizmor"
+description = "GitHub Actions workflow audits, consumed offline onto the grid — zizmor's findings beside the workflows, jobs, rulesets and credentials they concern."
+
+# Tier-1 load order (req-tap-plugin-arch-dependencies): the collector imports github_core's
+# models to read GithubWorkflow.configuration.raw_yaml and to resolve workflow / job endpoints
+# for FLAGS_WORKFLOW / FLAGS_JOB. Data order (run after github_core has collected) is a
+# Tier-2 concern and stays profile-explicit — see req-zizmor-trigger.
+depends_on = [
+  { slug = "github_core", note = "imports github_core models: reads workflow raw_yaml; resolves github_workflow / workflow_job edge endpoints" },
+]
+
+# The author's DECLARED crypto posture (req-tap-plugin-manifest-v0-fips; spec-fips.md declare-vs-decide).
+# The zizmor PyPI wheel is one static Rust binary that links `ring` and `aws-lc-rs` for TLS
+# (observed in zizmor's Cargo.lock, 2026-09-02). aws-lc has a FIPS-validated module, but the
+# wheel is built against the non-FIPS `aws-lc-sys` (reqwest default features), and `ring` is
+# never validated — so the binary is NOT the validated module even though the library it embeds
+# is validatable. This plugin invokes `zizmor --offline`, so the providers are present but never
+# execute a security operation (req-zizmor-binary). A FIPS deployment waives per plugin in the
+# boot profile's fips_waivers; the day online audits ship (req-zizmor-online-audits), this
+# declaration becomes load-bearing.
+[fips]
+status = "uses-nonvalidated"
+providers = ["rust-ring", "rust-aws-lc-rs"]
+reason = "The zizmor wheel embeds a Rust binary linking ring and aws-lc-rs (non-FIPS build) for TLS in its online audits; this plugin runs zizmor --offline, so the providers are present but never execute a security operation. A FIPS deployment waives per plugin in the boot profile."
+
+# [models], [edges], [grift], [collectors] and panel registration land with their requirements:
+# req-zizmor-finding, req-zizmor-run, req-zizmor-pages / req-zizmor-panel-*, req-zizmor-trigger,
+# req-zizmor-record.
