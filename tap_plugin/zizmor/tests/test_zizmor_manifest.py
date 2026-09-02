@@ -7,7 +7,12 @@ from pathlib import Path
 
 from tap_plugins.validate.service import validate_plugin
 
-PLUGIN_ROOT = Path(__file__).resolve().parents[2]
+# The plugin PACKAGE directory (tap_plugin/zizmor), which validate_plugin accepts and which
+# resolves the same way from an editable checkout and from an installed wheel
+# (`pytest --pyargs tap_plugin.zizmor` in CI). The package-identity chain (slug / dist /
+# entry point / namespace) needs the project root and is checked by CI's conformance job
+# against the checkout, not here.
+PLUGIN_ROOT = Path(__file__).resolve().parents[1]
 
 
 class TestStructure:

@@ -1,4 +1,4 @@
-# CI for tap-plugin-github-core.
+# CI for zizmor-tap.
 #
 # A thin caller. All the logic lives in the reusable workflow in the core TAP repo
 # (`.github/workflows/plugin-ci.yml`, req-plugin-extdev-repo-ci) so every plugin repo —
@@ -17,10 +17,12 @@
 # plugins during boot), both optional. A plugin that needs either adds a `secrets:` block
 # back. Retiring the TAP_CORE_RO_PAT secret org-wide is still a separate, deliberate step.
 #
-# `boot_profile` is intentionally omitted: the Django-free conformance job (structure +
-# requires_tap compatibility floor) is the gate here. A plugin that needs a real stack
-# ships a ci/nightly.boot.json and passes boot_profile to opt into the boot-and-test job
-# (see tap-plugin-samsite / tap-plugin-aws-core for the worked example).
+# `boot_profile` IS passed: this repo ships ci/nightly.boot.json (zizmor editable from the CI
+# checkout, github_core + identity_core pinned by commit), so the boot-and-test job boots a
+# real stack and runs the in-package suite via `pytest --pyargs tap_plugin.zizmor`. When
+# req-zizmor-record lands, that record also seeds the corpus bundle and fires the collector
+# with NO secrets — the offline scanner needs none — making this the first plugin whose
+# collector actually executes in CI.
 name: ci
 
 on:
