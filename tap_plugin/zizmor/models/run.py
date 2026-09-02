@@ -8,10 +8,9 @@ collection it read, and the counts its findings must add up to (req-zizmor-run).
 from typing import Any, ClassVar
 
 from django.db import models
+from tap_plugin.zizmor.models.finding import PERSONAS
 
 from tap_grid.models import BaseModel
-
-from tap_plugin.zizmor.models.finding import PERSONAS
 
 OUTCOMES: tuple[str, ...] = ("running", "ok", "partial", "failed", "skipped")
 

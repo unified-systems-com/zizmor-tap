@@ -29,7 +29,10 @@ _LOCATION_SCHEMA: dict[str, Any] = {
         "path": {"type": "string", "description": "Workflow file path inside the repository (.github/workflows/…)."},
         "route": {"type": "string", "description": "zizmor's symbolic route into the YAML, joined with '/'."},
         "job_key": {"type": ["string", "null"], "description": "The YAML job key the route passes through, if any."},
-        "step_index": {"type": ["integer", "null"], "description": "The step index under that job, if the route names one."},
+        "step_index": {
+            "type": ["integer", "null"],
+            "description": "The step index under that job, if the route names one.",
+        },
         "row": {"type": ["integer", "null"], "description": "0-based start row (zizmor json-v1 numbering)."},
         "column": {"type": ["integer", "null"], "description": "0-based start column."},
         "end_row": {"type": ["integer", "null"]},

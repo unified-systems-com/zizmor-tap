@@ -7,11 +7,10 @@ from __future__ import annotations
 
 import pytest
 from django.utils import timezone
+from tap_plugin.zizmor.models import ZizmorFinding
 
 from tap_grid.models import Entity
 from tap_grid.services import create_node
-
-from tap_plugin.zizmor.models import ZizmorFinding
 
 FINDING = "zizmor__finding"
 RUN = "zizmor__run"
