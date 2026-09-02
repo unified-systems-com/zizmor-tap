@@ -1,0 +1,69 @@
+# CI for zizmor-tap.
+#
+# A thin caller. All the logic lives in the reusable workflow in the core TAP repo
+# (`.github/workflows/plugin-ci.yml`, req-plugin-extdev-repo-ci) so every plugin repo —
+# ours and external developers' — runs the SAME admission gate, and improving it is one
+# edit in one place rather than a fan-out across a dozen repos.
+#
+# Since 2026-08-08 core is PUBLIC on the unified-systems-com org, which removed both of
+# the old silent-failure prerequisites: public reusable workflows are callable from any
+# repo (no Actions access_level sharing needed), and core can be checked out with no
+# credential at all. This caller therefore passes NO secrets: `harness_pat` was only ever
+# for reading core while core was private, and the reusable workflow falls back to
+# `github.token`, which reads a public repo anonymously.
+#
+# The CAPABILITY is untouched upstream and stays supported: plugin-ci.yml still declares
+# `harness_pat` (read a private core) and `plugins_ro_pat` (git-install PRIVATE sibling
+# plugins during boot), both optional. A plugin that needs either adds a `secrets:` block
+# back. Retiring the TAP_CORE_RO_PAT secret org-wide is still a separate, deliberate step.
+#
+# `boot_profile` IS passed: this repo ships ci/nightly.boot.json (zizmor editable from the CI
+# checkout, github_core + identity_core pinned by commit), so the boot-and-test job boots a
+# real stack and runs the in-package suite via `pytest --pyargs tap_plugin.zizmor`. When
+# req-zizmor-record lands, that record also seeds the corpus bundle and fires the collector
+# with NO secrets — the offline scanner needs none — making this the first plugin whose
+# collector actually executes in CI.
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  # Manual runs matter for a plugin repo: core can regress the plugin without a single
+  # commit landing HERE, and nothing else would re-run this gate before the nightly.
+  workflow_dispatch:
+
+# Explicit least-privilege GITHUB_TOKEN (CodeQL actions/missing-workflow-permissions).
+permissions:
+  contents: read
+
+jobs:
+  tap:
+    # SHA-pinned, matching ai-review.yml and ai-review-capture.yml in this directory.
+    # `harness_ref` selects the harness CODE that gets checked out; THIS selects the
+    # workflow DEFINITION — which steps run, which secrets reach them, how boot_profile
+    # is interpreted. Pinning the former and not the latter, as this file did until now,
+    # pins the smaller of the two. Bump deliberately; a gate improvement upstream does
+    # not reach this repo until someone reviews and bumps it, which is the trade.
+    uses: unified-systems-com/tap/.github/workflows/plugin-ci.yml@90ce349dffbc4f0efa55f58bccbfbb22f6226c03 # core main 2026-09-02
+    with:
+      plugin_slug: zizmor
+      # A full commit SHA, not a branch. The old value was `main` under a comment
+      # claiming it was "pinned deliberately" — which it was not: a branch moves, and
+      # this input selects the harness code that EXECUTES here. That was tolerable while
+      # the job only ran Django-free structure validation; enabling the boot leg below
+      # makes the same ref build an image and stand up a stack.
+      # Bump this on purpose, to a reviewed SHA.
+      harness_ref: 90ce349dffbc4f0efa55f58bccbfbb22f6226c03 # core main 2026-09-02
+      # Opt into the boot-and-test leg. Without it this repo's OWN tests never execute
+      # in its own gate: the conformance job is Django-free structure validation, so a
+      # test importing a core module — or asserting anything about collection — is not
+      # run by CI at all. PR #5 added exactly such a test and CI never executed it; it
+      # was verified by hand. A gate that cannot run the suite is not yet the gate.
+      boot_profile: ci/nightly.boot.json
+    # NO secrets passed. TAP_CORE_RO_PAT existed to read core while it was PRIVATE; core
+    # went public on 2026-08-08 and the harness workflow falls back to `github.token`,
+    # which can read a public repo anonymously. Passing it was vestigial — and it was the
+    # premise of every "executes beside a repository secret" finding on this PR. Removing
+    # it dissolves that class rather than mitigating it. Retiring the secret org-wide is a
+    # separate, deliberate step (core's plugin-ci.yml says so); this drops one caller's use.

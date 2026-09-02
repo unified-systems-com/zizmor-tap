@@ -1,0 +1,53 @@
+# TAP zizmor plugin — package-mode distribution (standalone from the first commit, 2026-09-02).
+#
+# Identity chain (pre-boot conformance gate enforces agreement):
+#   slug             = "zizmor"
+#   distribution     = "zizmor-tap"                (the -tap convention; never tap-plugin-zizmor)
+#   import namespace = "tap_plugin.zizmor"         (PEP 420 — no tap_plugin/__init__.py)
+#   entry-point key  = "zizmor"                    (== slug)
+#
+# Spec: specs/spec-zizmor-v0.md (req-zizmor-binary for the pinned dependency).
+[project]
+name = "zizmor-tap"
+description = "TAP zizmor plugin — GitHub Actions workflow audits, consumed offline onto the grid."
+requires-python = ">=3.14"
+dynamic = ["version"]
+
+# Tier-0 dependencies (req-tap-plugin-arch-dependencies-1).
+#   zizmor: the scanner itself, as its PyPI wheel — one static Rust binary on PATH plus its
+#   embedded PEP 770 SBOM. Pinned EXACTLY: the collector aborts if `zizmor --version` differs
+#   from this pin (req-zizmor-binary-2). Bumps arrive as Renovate PRs (tap#303) / Dependabot
+#   alerts; never loosen to a range.
+#   tap-plugin-github-core: the collector imports github_core's models to read workflow YAML
+#   and resolve workflow/job endpoints — a code + vocabulary dependency (downward-only).
+dependencies = [
+    "zizmor==1.30.0",
+    "tap-plugin-github-core",
+]
+
+[project.entry-points."tap.plugins"]
+zizmor = "tap_plugin.zizmor.apps:ZizmorConfig"
+
+# Developer-mode deps — the plugin's OWN dev closure (req-tap-plugin-arch-dev-deps); PEP 735,
+# never installed by boot, never in the wheel.
+[dependency-groups]
+dev = [
+    "pytest>=8.3",
+    "pytest-django>=4.9",
+    "factory-boy>=3.3",
+]
+
+[build-system]
+requires = ["hatchling", "hatch-vcs"]
+build-backend = "hatchling.build"
+
+# VCS-derived PEP 440 version (req-tap-plugin-arch-versioning-1); no hand-maintained field.
+[tool.hatch.version]
+source = "vcs"
+
+[tool.hatch.version.raw-options]
+fallback_version = "0.0.0"
+
+# PEP 420 namespace build: ship tap_plugin/zizmor/* with no tap_plugin/__init__.py.
+[tool.hatch.build.targets.wheel]
+only-include = ["tap_plugin/zizmor"]

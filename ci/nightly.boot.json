@@ -1,0 +1,49 @@
+{
+  "version": 1,
+  "description": "zizmor CI/nightly boot-and-test profile (req-plugin-extdev-repo-ci; consumed by tap's plugin-ci.yml boot-and-test job). Installs zizmor EDITABLE from the CI checkout at _external/zizmor so the in-package suite runs against THIS repo's HEAD, plus its declared dependency github_core and github_core's own dependency identity_core, both pinned by COMMIT (a tag can be moved or recreated; this profile decides what code executes in CI, and a commit is the only immutable ref). The thin caller passes no secrets \u2014 core is public and checkouts ride github.token. No population section yet: the plugin ships no GRIFT and no collector at this stage (skeleton, zizmor-tap#1). When req-zizmor-record lands, this record gains the corpus seed and a fire-collector step for zizmor:zizmor WITHOUT required_secrets \u2014 the offline collector needs none, which makes it the first boot-and-test record in the estate whose collector actually fires in CI. FIPS: the image runs FIPS-on by default and the pre-boot crypto-BOM gate scans the assembled venv \u2014 it found `boringssl` and `rust-aws-lc-rs` inside the zizmor binary on the first CI boot (2026-09-02) and refused to serve, exactly as designed; `fips_waivers` below is the OPERATOR's justified acceptance, narrowed to the two providers reviewed. NO profile_kind: it is an allowlist token that only ever widens, and a CI profile has no use for the dev_local affordance.",
+  "install": {
+    "plugins": [
+      {
+        "slug": "identity_core",
+        "enabled": true,
+        "source": {
+          "type": "git",
+          "url": "https://github.com/unified-systems-com/tap-plugin-identity-core",
+          "rev": "a1e35aa7b43292314b3ecf4a75db40f72225fa4a"
+        },
+        "note": "Package-mode (tap_plugin.identity_core). github_core's declared dependency (oidc_issuer convergence node). Pinned to the commit v0.1.1 pointed at on 2026-08-28."
+      },
+      {
+        "slug": "github_core",
+        "enabled": true,
+        "source": {
+          "type": "git",
+          "url": "https://github.com/unified-systems-com/tap-plugin-github-core",
+          "rev": "3356301e676094523943f2bbb055be501a6b42d6"
+        },
+        "note": "Package-mode (tap_plugin.github_core). zizmor's declared depends_on: the workflow vocabulary (GithubWorkflow.configuration.raw_yaml, WorkflowJob) the collector reads and the edge endpoints it resolves. Pinned to the commit v0.4.0 pointed at on 2026-09-02. Installed, not seeded, not fired."
+      },
+      {
+        "slug": "zizmor",
+        "enabled": true,
+        "source": {
+          "type": "editable",
+          "path": "_external/zizmor"
+        },
+        "note": "Package-mode (tap_plugin.zizmor), installed EDITABLE from the CI checkout so the in-package suite runs against this repo's HEAD. Pulls the exact zizmor==1.30.0 PyPI wheel (the scanner binary) as its Tier-0 dependency."
+      }
+    ]
+  },
+  "fips_waivers": [
+    {
+      "plugin": "zizmor",
+      "provider": "boringssl",
+      "reason": "zizmor==1.30.0 is a static Rust binary that links ring (BoringSSL-derived core; the scanner reports it as `boringssl`) for TLS in its ONLINE audits. This plugin invokes `zizmor --offline` only (req-zizmor-collector), so the provider is present but never executes a security operation; the request path that would use it is never taken. Reviewed 2026-09-02 against zizmor's Cargo.lock (ring, aws-lc-rs/aws-lc-sys, rustls, reqwest). The wheel is built against the non-FIPS aws-lc-sys, so it is not the validated AWS-LC module even though that library is validatable; the day online audits ship (req-zizmor-online-audits) this waiver must be re-decided, not carried forward."
+    },
+    {
+      "plugin": "zizmor",
+      "provider": "rust-aws-lc-rs",
+      "reason": "zizmor==1.30.0 is a static Rust binary that links aws-lc-rs for TLS in its ONLINE audits. This plugin invokes `zizmor --offline` only (req-zizmor-collector), so the provider is present but never executes a security operation; the request path that would use it is never taken. Reviewed 2026-09-02 against zizmor's Cargo.lock (ring, aws-lc-rs/aws-lc-sys, rustls, reqwest). The wheel is built against the non-FIPS aws-lc-sys, so it is not the validated AWS-LC module even though that library is validatable; the day online audits ship (req-zizmor-online-audits) this waiver must be re-decided, not carried forward."
+    }
+  ]
+}
