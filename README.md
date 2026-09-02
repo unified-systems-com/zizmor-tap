@@ -41,12 +41,41 @@
 | Pages / panels | `/zizmor`, `/zizmor/runs/<id>`, `/zizmor/findings/<id>` — planned |
 | Boot records | corpus-fed in-package record + `ci/nightly.boot.json` — planned (`req-zizmor-record`) |
 
-## Install and validate
+## Running it
 
-Package-mode plugin: add it to a boot record's `install` section (git source, pinned tag) or
-develop it editable with `spawn-session.sh <label> --boot-file <record> --dev-plugins zizmor,github_core`.
+> **Status:** not installable yet. The two boot records below land with `req-zizmor-record`
+> and the collector (`req-zizmor-collector`); this section is the front door they will open.
+
+Two records ship inside the package, and the `--from` pointer fetches either straight from this
+repository — the tap clone carries nothing zizmor-specific:
+
+| Record | What it does | Credentials |
+| --- | --- | --- |
+| `zizmor` | Seeds the **corpus bundle** (known-bad workflows from zizmor's own test data) and fires the collector offline. Sixty seconds from nothing to `/zizmor` showing real findings. Kick the tires; nothing leaves the box. | none |
+| `zizmor-live` | Installs github_core, fires its collector against **your** GitHub organization, then fires zizmor over what it collected. | the github_core credential (a read-only GitHub App) |
 
 ```bash
+mkdir -p ~/tap-sessions
+git clone https://github.com/unified-systems-com/tap.git ~/tap-sessions/main
+cd ~/tap-sessions/main
+scripts/spawn-session.sh zz --from git+https://github.com/unified-systems-com/zizmor-tap@vX.Y.Z#zizmor        # corpus, no credentials
+scripts/spawn-session.sh zz --from git+https://github.com/unified-systems-com/zizmor-tap@vX.Y.Z#zizmor-live   # your org
+```
+
+You do not need the credential right before running the live record: the record *declares* what it
+needs, the boot preflight names exactly what is missing or dead in seconds, and an AI assistant
+attached to the session closes the gap — `/provision-secrets` reads the declaration, and
+`create-github-app` (shipped by github_core) mints the least-privilege App from the collection
+manifest and proves it end to end. The failure output is the setup guide.
+
+**The easier way:** open an AI coding assistant in `~/tap-sessions/main` and say "run zizmor
+against my organization". The `/get-started` skill drives the host prep and the spawn; the
+provisioning skills drive the credential.
+
+## Developing it
+
+```bash
+scripts/spawn-session.sh zz-dev --boot-file <this repo>/tap_plugin/zizmor/boot/zizmor.boot.json --dev-plugins zizmor,github_core
 python -m tap_plugins.validate_plugin tap_plugin/zizmor          # structure (Django-free)
 python -m tap.preboot --profile <profile>                        # conformance + dependency gates
 manage.py plugins                                                # load report + dependency edges
