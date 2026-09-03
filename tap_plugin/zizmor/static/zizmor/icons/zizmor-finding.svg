@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Original glyph: a diamond marker with an exclamation, currentColor so it themes. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24">
+  <title>zizmor Finding</title>
+  <path d="M12 2.5 21.5 12 12 21.5 2.5 12Z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+  <path fill="currentColor" d="M11.2 7.5h1.6v5.6h-1.6Zm0 7h1.6v1.7h-1.6Z"/>
+</svg>
