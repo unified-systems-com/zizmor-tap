@@ -34,3 +34,8 @@ zizmor__run = "tap_plugin.zizmor.models.run.ZizmorRun"
 # [edges], [grift], collector and panel registration land with their requirements:
 # req-zizmor-finding (edges), req-zizmor-run (edges), req-zizmor-pages / req-zizmor-panel-*,
 # req-zizmor-trigger, req-zizmor-record.
+
+[[boot.records]]
+name = "ci"
+description = "RESERVED NAME (req-boot-bootstrap-ci-record): the stack this plugin's own tests run in — depends_on closure + self, offline, credential-free. The consumer flips self to editable."
+sha256 = "ae172ed4e3d005f6d17dbab1177d84ecc86807705f17c5758dd806a57fe0c33a"
