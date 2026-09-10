@@ -58,5 +58,17 @@
   "population": {
     "on_failure": "abort",
     "steps": []
-  }
+  },
+  "fips_waivers": [
+    {
+      "artifact": "*/bin/zizmor",
+      "provider": "boringssl",
+      "reason": "zizmor is a static YAML linter for GitHub Actions workflows; the shipped Rust binary links boringssl and aws-lc-rs for its HTTPS client (fetching remote workflow references), which TAP never invokes in the operational request path — the plugin runs zizmor on local files only. No TAP data is encrypted, signed or hashed by these providers. Waived for the plugin's own test stack (zizmor-tap#10 owns the product decision: declare in [fips] or build against system OpenSSL)."
+    },
+    {
+      "artifact": "*/bin/zizmor",
+      "provider": "rust-aws-lc-rs",
+      "reason": "zizmor is a static YAML linter for GitHub Actions workflows; the shipped Rust binary links boringssl and aws-lc-rs for its HTTPS client (fetching remote workflow references), which TAP never invokes in the operational request path — the plugin runs zizmor on local files only. No TAP data is encrypted, signed or hashed by these providers. Waived for the plugin's own test stack (zizmor-tap#10 owns the product decision: declare in [fips] or build against system OpenSSL)."
+    }
+  ]
 }
