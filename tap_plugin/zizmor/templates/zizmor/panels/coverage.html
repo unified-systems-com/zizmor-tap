@@ -1,0 +1,48 @@
+<div class="tap-panel tap-panel--zizmor-coverage">
+    {% if not panel.config.hide_header %}{% include "tap_web/panel_header.html" %}{% endif %}
+    {% if run %}
+    <div class="tap-zizmor-coverage">
+        <p class="tap-zizmor-coverage__lede">
+            The findings below are only as complete as what the scanner actually read.
+            This run considered <strong>{{ total }}</strong> workflow{{ total|pluralize }};
+            {% if unobserved_total %}<strong class="tap-zizmor-coverage__alarm">{{ unobserved_total }}</strong>
+            of them were never scanned.{% else %}all of them were scanned.{% endif %}
+        </p>
+        <div class="tap-zizmor-coverage__groups">
+            {% for group in groups %}
+            <section class="tap-zizmor-coverage__group tap-zizmor-coverage__group--{{ group.tone }}">
+                <h4>
+                    <span class="tap-zizmor-coverage__count">{{ group.count }}</span>
+                    {{ group.label }}
+                </h4>
+                <p class="tap-zizmor-coverage__meaning">{{ group.meaning }}</p>
+                {% if group.named %}
+                <ul class="tap-zizmor-coverage__list">
+                    {% for row in group.named %}
+                    <li>
+                        <code>{{ row.workflow }}</code>
+                        {% if row.reason %}<span class="tap-zizmor-coverage__reason">{{ row.reason }}</span>{% endif %}
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% if group.remainder %}
+                <p class="tap-zizmor-coverage__more">and {{ group.remainder }} more</p>
+                {% endif %}
+                {% endif %}
+            </section>
+            {% endfor %}
+        </div>
+        {% if unreached %}
+        <p class="tap-zizmor-coverage__unreached">
+            <strong>{{ unreached }}</strong> workflow{{ unreached|pluralize }} on this grid carry no
+            record from this run at all — not scanned, not skipped, simply not considered.
+        </p>
+        {% endif %}
+    </div>
+    {% else %}
+    <div class="tap-zizmor-coverage__empty">
+        No zizmor run has recorded coverage on this grid yet. Until one does, nothing here should be
+        read as “clean” — only as unmeasured.
+    </div>
+    {% endif %}
+</div>

@@ -95,12 +95,13 @@ is real.
 | req-zizmor-record | [The Corpus Proof](#the-corpus-proof) | Implemented | The suite seeds workflow rows in-transaction, fires the collector offline, and asserts against zizmor's own corpus; fixture data never ships or seeds a live grid (ruled 2026-09-10) |
 | req-zizmor-finding | [The Finding Node](#the-finding-node) | In Development | `zizmor__finding` with provenance fields; edges to run, workflow and job. A compliance-level node in disguise — see the implementation note |
 | req-zizmor-run | [Runs Are First-Class](#runs-are-first-class) | In Development | One `zizmor__run` per execution; findings and scanned workflows hang off it; unevaluated = not observed by this scanner |
-| req-zizmor-page-landing | [Page: Landing](#page-landing) | Proposed | `/zizmor` — about, findings table, runs table; every cell drills in |
+| req-zizmor-page-landing | [Page: Landing](#page-landing) | Implemented | `/zizmor` — about, findings table, runs table; every cell drills in |
 | req-zizmor-page-run | [Page: Run](#page-run) | Proposed | `/zizmor/runs/<run_id>` — summary + detail of one run |
 | req-zizmor-page-finding | [Page: Finding](#page-finding) | Proposed | `/zizmor/findings/<finding_id>` — one finding in full |
-| req-zizmor-panel-about | [Panel: About](#panel-about) | Proposed | What zizmor is; version observed from the binary; persona; offline posture and skipped audits |
-| req-zizmor-panel-findings-table | [Panel: Findings Table](#panel-findings-table) | Proposed | Latest run's findings with not-observed rows; filter by audit and severity; cells drill in |
-| req-zizmor-panel-runs-table | [Panel: Runs Table](#panel-runs-table) | Proposed | Recent runs with counts and outcome; cells drill in |
+| req-zizmor-panel-coverage | [Panel: Coverage](#panel-coverage) | Implemented | What the latest run read and what it never did; the panel that stops a findings list reading as safety |
+| req-zizmor-panel-about | [Panel: About](#panel-about) | Implemented | What zizmor is; version observed from the binary; persona; offline posture and skipped audits |
+| req-zizmor-panel-findings-table | [Panel: Findings Table](#panel-findings-table) | Implemented | Latest run's findings with not-observed rows; filter by audit and severity; cells drill in |
+| req-zizmor-panel-runs-table | [Panel: Runs Table](#panel-runs-table) | Implemented | Recent runs with counts and outcome; cells drill in |
 | req-zizmor-panel-run-summary | [Panel: Run Summary](#panel-run-summary) | Proposed | One run's version, persona, source collection, coverage, counts, duration |
 | req-zizmor-panel-run-detail | [Panel: Run Detail](#panel-run-detail) | Proposed | Every finding the run produced and every workflow it scanned with outcome |
 | req-zizmor-panel-finding-detail | [Panel: Finding Detail](#panel-finding-detail) | Proposed | One finding in full, linked to its workflow, job and run |
@@ -393,7 +394,7 @@ page and every run cell to its run page. Reached from the site navigation and by
 
 | ACID | Title | Status | Description | Notes |
 | --- | --- | :---: | --- | --- |
-| req-zizmor-page-landing-1 | Renders With Three Panels | Proposed | `/zizmor` resolves and renders the three panels in order with the seeded layout. | |
+| req-zizmor-page-landing-1 | Renders With Four Panels | Implemented | `/zizmor` resolves and renders about, findings, coverage and runs in order with the seeded layout — *observed* 2026-09-10: page 200, every panel endpoint 200 with real data. | Four, not three: coverage was added (`req-zizmor-panel-coverage`) because a findings table alone cannot tell the truth. |
 | req-zizmor-page-landing-2 | Drill-In | Proposed | One click from the landing page reaches a run page and one click reaches a finding page. | |
 
 ### Page: Run
@@ -444,6 +445,50 @@ Status: `Proposed`
 | --- | --- | :---: | --- | --- |
 | req-zizmor-panel-about-1 | Version From The Run | Proposed | The version and persona shown equal the latest run's recorded values; with no run yet, the panel says so rather than showing a default. | Derive, don't declare. |
 | req-zizmor-panel-about-2 | Skipped Audits Named | Proposed | The four offline-incapable audits are listed as skipped with the reason. |  |
+
+> **Known gap, named not hidden (zizmor-tap#27):** the findings table lists every finding ever
+> observed, not the current state. The collector never tombstones, so a finding that has since been
+> FIXED still renders. Scoping the table to the latest run would be worse — a workflow that run could
+> not read (`no-yaml`, `parse-failed`) would silently lose everything previously known about it. The
+> correct fix is well-founded tombstoning: absence is admissible as evidence exactly on workflows the
+> run actually evaluated.
+
+### Panel: Coverage
+----
+RID: `req-zizmor-panel-coverage`
+
+Status: `Implemented`
+
+`zizmor_coverage` — the four `SCANNED_WORKFLOW__zizmor` outcomes for the latest run, with counts,
+the reason recorded for every non-evaluated one, and a capped list of the workflows in each.
+
+**Why this panel exists at all.** A findings table cannot tell the truth on its own: it renders a
+workflow nobody scanned identically to one that came back clean. That is not a rare edge —
+*observed* 2026-09-10 on the real organisation, **40 of 117 workflows carried no `raw_yaml`**, so a
+third of the estate had never been read while the page would have shown a confident list of 155
+findings. The panel is mounted directly beneath the findings table for the same reason: coverage one
+click away is coverage nobody opens.
+
+It also reports workflows the run never reached at all — on the grid, but carrying no edge from this
+run. That state is distinct from every outcome, and invisible otherwise, because a run cannot record
+an outcome for something it never considered.
+
+#### Implementation
+
+A custom panel type rather than a standard table instance, for one concrete reason: the standard
+table renders NODE results (`spec-web-panels-standard-table.md` defers edge-centric result sets to a
+future variant), while `outcome` and `reason` live on the edge. Filed as tap#418; when that lands
+this collapses into a standard table instance. The `unknown` tone is amber rather than grey on
+purpose — a workflow the scanner never read is not a neutral fact and must not read as one.
+
+#### Acceptance Criteria
+
+| ACID | Title | Status | Description | Notes |
+| --- | --- | :---: | --- | --- |
+| req-zizmor-panel-coverage-1 | Unread Is Counted | Implemented | Every non-`evaluated` outcome is counted and shown with the reason recorded on its edge. | |
+| req-zizmor-panel-coverage-2 | Unread Comes First | Implemented | The outcomes whose findings are UNKNOWN render above the scanned one. | Reading order is the message. |
+| req-zizmor-panel-coverage-3 | Never Considered Is Visible | Implemented | Workflows on the grid with no coverage edge from this run are reported separately from every outcome. | The state a run cannot record for itself. |
+| req-zizmor-panel-coverage-4 | Silence Is Not Clean | Implemented | With no run on the grid the panel says nothing has been measured, rather than rendering empty. | |
 
 ### Panel: Findings Table
 ----

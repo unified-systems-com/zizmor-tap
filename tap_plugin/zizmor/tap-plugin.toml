@@ -44,10 +44,14 @@ FLAGS_WORKFLOW__zizmor = "edges/FLAGS_WORKFLOW.edge.json"
 FLAGS_JOB__zizmor = "edges/FLAGS_JOB.edge.json"
 FLAGS_ACTION__zizmor = "edges/FLAGS_ACTION.edge.json"
 
-# [grift], collector and panel registration land with their requirements:
-# req-zizmor-pages / req-zizmor-panel-*, req-zizmor-trigger, req-zizmor-record.
+# The collector is registered in apps.py ready(); panel types likewise.
 
 [[boot.records]]
 name = "ci"
 description = "RESERVED NAME (req-boot-bootstrap-ci-record): the stack this plugin's own tests run in — depends_on closure + self, offline, credential-free. The consumer flips self to editable."
 sha256 = "7888c2fecdb08f6160c0624b740e64b51c82a61b657defef9333a9d3024da31d"
+
+# Seeded data this plugin ships. NOTE for whoever merges second: PR# 21 (the collector schedule)
+# adds `schedule = "grift/schedule.grift.json"` to this same table — keep both keys.
+[grift]
+pages = "grift/pages.grift.json"
