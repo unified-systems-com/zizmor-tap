@@ -36,3 +36,13 @@ class ZizmorConfig(TapPluginConfig):
                 "per workflow considered so that unevaluated is distinguishable from clean."
             ),
         )
+
+        # Panel types (req-zizmor-panel-about, req-zizmor-panel-coverage). Registered in ready()
+        # rather than at import time: earlier registration runs before every app has loaded.
+        from tap_plugin.zizmor.panels.about import ZizmorAboutPanelType
+        from tap_plugin.zizmor.panels.coverage import ZizmorCoveragePanelType
+
+        from tap_web.registry import panel_type_registry
+
+        panel_type_registry.register(ZizmorAboutPanelType.slug, ZizmorAboutPanelType)
+        panel_type_registry.register(ZizmorCoveragePanelType.slug, ZizmorCoveragePanelType)

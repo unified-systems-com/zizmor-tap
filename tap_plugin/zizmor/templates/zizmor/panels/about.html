@@ -1,0 +1,38 @@
+<div class="tap-panel tap-panel--zizmor-about">
+    {% if not panel.config.hide_header %}{% include "tap_web/panel_header.html" %}{% endif %}
+    {% if run %}
+    <div class="tap-zizmor-about">
+        <p class="tap-zizmor-about__lede">
+            <a href="https://docs.zizmor.sh/" target="_blank" rel="noopener noreferrer">zizmor</a>
+            is a static analyser for GitHub Actions workflows. TAP runs it <strong>offline</strong>,
+            over the workflow YAML already collected onto this grid, and lands each result as a
+            finding attached to the workflow it concerns.
+        </p>
+        <dl class="tap-zizmor-about__facts">
+            <div><dt>Scanner</dt><dd>zizmor {{ run.scanner_version }}</dd></div>
+            <div><dt>Persona</dt><dd>{{ run.persona }}</dd></div>
+            <div><dt>Audits run</dt><dd>{{ audits_ran }}</dd></div>
+            <div><dt>Last run</dt><dd>{{ run.started_at|default:"—" }}</dd></div>
+        </dl>
+        {% if skipped %}
+        <div class="tap-zizmor-about__skipped">
+            <h4>{{ skipped|length }} audit{{ skipped|length|pluralize }} did not run</h4>
+            <p class="tap-zizmor-about__caveat">
+                These need a GitHub API token, so this offline run could not perform them. Their
+                findings are <strong>unknown</strong> for every workflow — not zero.
+            </p>
+            <ul>
+                {% for audit in skipped %}
+                <li><code>{{ audit.audit_id }}</code> <span>{{ audit.reason }}</span></li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+    </div>
+    {% else %}
+    <div class="tap-zizmor-about__empty">
+        The zizmor collector has not run on this grid yet, so there is nothing to describe.
+        Once it runs, this panel reports the scanner version, persona and audit inventory it used.
+    </div>
+    {% endif %}
+</div>

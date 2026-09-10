@@ -1,0 +1,113 @@
+/* zizmor panels. BEM under .tap-zizmor-*; TAP slate scale throughout.
+   The one deliberate colour departure is the `unknown` tone on the coverage panel: amber, because a
+   workflow the scanner never read is not a neutral fact and must not read as one. */
+
+.tap-zizmor-about__lede,
+.tap-zizmor-coverage__lede {
+    color: #334155;
+    line-height: 1.5;
+    margin: 0 0 0.75rem;
+}
+
+.tap-zizmor-about__facts {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.25rem;
+    margin: 0 0 0.75rem;
+}
+
+.tap-zizmor-about__facts dt {
+    color: #64748b;
+    font-size: 0.75rem;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+
+.tap-zizmor-about__facts dd {
+    color: #1e293b;
+    font-size: 0.95rem;
+    font-variant-numeric: tabular-nums;
+    margin: 0.1rem 0 0;
+}
+
+.tap-zizmor-about__skipped h4,
+.tap-zizmor-coverage__group h4 {
+    color: #1e293b;
+    font-size: 0.9rem;
+    margin: 0 0 0.25rem;
+}
+
+.tap-zizmor-about__caveat,
+.tap-zizmor-coverage__meaning {
+    color: #64748b;
+    font-size: 0.8rem;
+    line-height: 1.45;
+    margin: 0 0 0.4rem;
+}
+
+.tap-zizmor-about__skipped ul,
+.tap-zizmor-coverage__list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.tap-zizmor-about__skipped li,
+.tap-zizmor-coverage__list li {
+    border-top: 1px solid #e2e8f0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    padding: 0.3rem 0;
+}
+
+.tap-zizmor-about__skipped li span,
+.tap-zizmor-coverage__reason {
+    color: #64748b;
+    font-size: 0.8rem;
+}
+
+.tap-zizmor-coverage__groups {
+    display: flex;
+    flex-direction: column;
+    gap: 0.9rem;
+}
+
+.tap-zizmor-coverage__group {
+    border-left: 3px solid #e2e8f0;
+    padding-left: 0.75rem;
+}
+
+/* Amber, not grey: "we never looked" is the finding, not the absence of one. */
+.tap-zizmor-coverage__group--unknown {
+    border-left-color: #d97706;
+}
+
+.tap-zizmor-coverage__group--observed {
+    border-left-color: #94a3b8;
+}
+
+.tap-zizmor-coverage__count {
+    font-size: 1.1rem;
+    font-variant-numeric: tabular-nums;
+    font-weight: 600;
+}
+
+.tap-zizmor-coverage__alarm {
+    color: #b45309;
+}
+
+.tap-zizmor-coverage__more,
+.tap-zizmor-coverage__unreached {
+    color: #64748b;
+    font-size: 0.8rem;
+    margin: 0.35rem 0 0;
+}
+
+.tap-zizmor-about__empty,
+.tap-zizmor-coverage__empty {
+    color: #64748b;
+    font-size: 0.85rem;
+    line-height: 1.5;
+    padding: 0.5rem 0;
+}
