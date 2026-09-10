@@ -1,0 +1,29 @@
+{
+  "description": "Upstream provenance for the vendored zizmor corpus. Each entry records the file's GIT BLOB SHA as GitHub served it at the pinned tag, so byte-identity with upstream is a checkable fact rather than a claim in a README. `git hash-object <file>` recomputes it offline; a reader can compare the same value against github.com without trusting this repository.",
+  "upstream": {
+    "repository": "https://github.com/zizmorcore/zizmor",
+    "ref": "v1.30.0",
+    "path": "crates/zizmor/tests/integration/test-data/",
+    "license": "MIT",
+    "license_file": "LICENSE-zizmor",
+    "retrieved": "2026-09-10"
+  },
+  "note": "The ref is the exact version pinned in pyproject.toml (`zizmor==1.30.0`). These files move only when that pin moves, and re-vendoring rides its own PR — never a build step, because a corpus that regenerated itself would silently adopt whatever upstream changed, which is the drift it exists to detect.",
+  "files": {
+    "anonymous-definition.yml": {"upstream_path": "anonymous-definition.yml", "blob_sha": "f702f1ee4ba52826dd5f7785dbe472b7c7d4e56b"},
+    "artipacked.yml": {"upstream_path": "artipacked.yml", "blob_sha": "37d74039d3c82662e0afdfdee2ea600b1b4d93fb"},
+    "bad-yaml.yml": {"upstream_path": "invalid/bad-yaml-2.yml", "blob_sha": "8e61556d03a852371674d1a058db5f4e3874dbd7"},
+    "bot-conditions.yml": {"upstream_path": "bot-conditions.yml", "blob_sha": "a94462fc530c6308fe8f1b2fa57b1f9750fd86f6"},
+    "cache-poisoning.yml": {"upstream_path": "cache-poisoning.yml", "blob_sha": "950e005b10de89798df5522871209ab81f4a1f5e"},
+    "excessive-permissions.yml": {"upstream_path": "excessive-permissions.yml", "blob_sha": "1730d325dd4e64acd1542ef7ecd4ff387affb110"},
+    "github-app.yml": {"upstream_path": "github-app.yml", "blob_sha": "dd048cd2c9f3b2a192669991d9199a09b3e5a50e"},
+    "insecure-commands.yml": {"upstream_path": "insecure-commands.yml", "blob_sha": "2a6541c31ccca29966b0207600706f1ef7b10fdc"},
+    "neutral.yml": {"upstream_path": "neutral.yml", "blob_sha": "f0de6799c372caed126781a3df83ea682acf21b0"},
+    "obfuscation.yml": {"upstream_path": "obfuscation.yml", "blob_sha": "37ddda1b1995539d7c09bc595a9b9baaea694934"},
+    "secrets-inherit.yml": {"upstream_path": "secrets-inherit.yml", "blob_sha": "2bfbe98a9d8b7b378c077c407ad5353083057d56"},
+    "self-hosted.yml": {"upstream_path": "self-hosted.yml", "blob_sha": "9529744788bf09b83304d29f68925fb7bf8574d2"},
+    "template-injection.yml": {"upstream_path": "template-injection.yml", "blob_sha": "22cc8f7f5363a46e8217452d459f27dd7b44993a"},
+    "unpinned-uses.yml": {"upstream_path": "unpinned-uses.yml", "blob_sha": "69e3b22674216a973aeb5ae60958bf5734299b0d"},
+    "use-trusted-publishing.yml": {"upstream_path": "use-trusted-publishing.yml", "blob_sha": "c4d4dc7c10e2a2ac51dfd72b27d36af221185ec6"}
+  }
+}

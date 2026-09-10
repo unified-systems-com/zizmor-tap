@@ -18,7 +18,7 @@
 | Trigger | Own `schedule` node (GRIFT-seeded, user-editable) + boot-record `fire-collector` for first light — `req-zizmor-trigger` |
 | Pages | `req-zizmor-page-landing`, `req-zizmor-page-run`, `req-zizmor-page-finding`; one requirement per panel type (`req-zizmor-panel-*`) |
 | Persona | Fixed `auditor` in v0, recorded on every run and finding; configurable = `req-zizmor-persona` (Backlog, tap#308 / tap#310) |
-| Boot records | `zizmor` (in-package, corpus-fed, fires the collector) and `ci/nightly.boot.json` — `req-zizmor-record` |
+| Boot records | `ci` (in-package, `req-boot-bootstrap-ci-record`) and `ci/nightly.boot.json`. The corpus proof is a TEST, not a seeded record — `req-zizmor-record` |
 
 **Entry points**
 
@@ -92,7 +92,7 @@ is real.
 | req-zizmor-binary | [The Pinned Binary](#the-pinned-binary) | Proposed | Exact PyPI pin; honest `[fips]` declaration; SBOM/alert channels named with their gaps |
 | req-zizmor-collector | [Offline Derived Collector](#offline-derived-collector) | Implemented | Materialize `raw_yaml` per repo → `zizmor --offline --format json-v1` → GRIFT batch |
 | req-zizmor-trigger | [Own Schedule, With A Staleness Guard](#own-schedule-with-a-staleness-guard) | Proposed | Seeded `schedule` node + boot-record first light; a run names the github_core collection it read and skips while one is active |
-| req-zizmor-record | [A Corpus-Fed Boot Record That Fires](#a-corpus-fed-boot-record-that-fires) | Proposed | In-package record seeds a corpus bundle of known-bad workflows and fires the collector offline; expected audit IDs derive from zizmor's own test corpus; the suite runs the same population in the boot-and-test leg |
+| req-zizmor-record | [The Corpus Proof](#the-corpus-proof) | Implemented | The suite seeds workflow rows in-transaction, fires the collector offline, and asserts against zizmor's own corpus; fixture data never ships or seeds a live grid (ruled 2026-09-10) |
 | req-zizmor-finding | [The Finding Node](#the-finding-node) | In Development | `zizmor__finding` with provenance fields; edges to run, workflow and job. A compliance-level node in disguise — see the implementation note |
 | req-zizmor-run | [Runs Are First-Class](#runs-are-first-class) | In Development | One `zizmor__run` per execution; findings and scanned workflows hang off it; unevaluated = not observed by this scanner |
 | req-zizmor-page-landing | [Page: Landing](#page-landing) | Proposed | `/zizmor` — about, findings table, runs table; every cell drills in |
@@ -244,47 +244,65 @@ scanning rows mid-write.
 | req-zizmor-trigger-3 | Skips While Upstream Writes | Proposed | With a github_core collection job active, a scheduled fire finalizes as skipped naming that job; no run node is created. | |
 | req-zizmor-trigger-4 | Source Recorded | Proposed | Every run names the github_core collection job it read. | Provenance, not only timing. |
 
-### A Corpus-Fed Boot Record That Fires
+### The Corpus Proof
 ----
 RID: `req-zizmor-record`
 
-Status: `Proposed`
+Status: `Implemented`
 
-The offline collector is a pure function of grid state, so a boot record can prove it end to end
-without a credential. The in-package record (`tap_plugin/zizmor/boot/zizmor.boot.json`, declared
-under `[[boot.records]]`) installs the sibling closure (github_core for the workflow vocabulary,
-install-only; administrivia; zizmor itself), seeds a **corpus bundle** of `github_workflow` nodes
-under a synthetic corpus account (`grift/corpus.grift.json`: known-bad workflows with `raw_yaml` populated,
-one deliberately invalid YAML for the parse-failed state, one repository with no workflows), and
-fires `zizmor:zizmor`. `required_secrets` is empty — the first record in the estate whose
-fire-collector step needs none.
+The offline collector is a pure function of grid state, so it can be proven end to end with no
+credential and no network — **in the test suite**, against zizmor's own corpus as the oracle.
 
 The corpus is a curated subset of **zizmor's own integration corpus**
-(`crates/zizmor/tests/integration/test-data/`, MIT, ~200 workflow files grouped per audit:
-template-injection, cache-poisoning, unpinned-uses, excessive-permissions, invalid, …), vendored
-with attribution. Each carries the audit IDs zizmor's own tests expect for it, so "does what it
-says on the tin" is asserted against the scanner's own oracle, not ours.
+(`crates/zizmor/tests/integration/test-data/` at the pinned tag, MIT, vendored with attribution in
+`tap_plugin/zizmor/tests/corpus/`). Upstream groups those files per audit and names each for the
+audit it demonstrates, so the expectation is the scanner project's declaration rather than a
+snapshot of our own output played back to us. Two entries matter as much as the known-bad ones:
+`neutral.yml`, upstream's known-GOOD workflow, and `invalid/bad-yaml-2.yml`, which zizmor itself
+cannot parse.
 
-`ci/nightly.boot.json` is the same closure at the same pins with zizmor editable from the CI
-checkout. The plugin CI boot-and-test leg does not run population (`manage.py boot` runs at spawn
-time only; the entrypoint runs pre-boot + migrate), so the in-package **test** performs the
-population itself: seed the corpus bundle, run the collector, assert findings — the same code path
-the record fires at spawn.
+The collector's input is `GithubWorkflow` rows, which on a real grid are github_core's observations.
+The test creates them through the service layer inside the test transaction, where they roll back.
+
+**Ruled 2026-09-10 (George): this is a test, and it is built as one.** The earlier shape — an
+in-package boot record seeding a `grift/corpus.grift.json` bundle of synthetic workflow nodes, fired
+at spawn — is withdrawn, for two reasons. First, a seeded corpus node on a live grid is
+indistinguishable from one github_core actually observed; wanting a "this row is synthetic"
+dimension to make that safe was the signal that the data belonged in a test, not in the product.
+Second, it would not have proven anything anyway: plugin CI's boot-and-test leg does not run
+population (`manage.py boot` runs at spawn time only), so the *test* was always doing the work and
+the bundle was riding along.
+
+The corpus **does** ship in the wheel, as test data — *verified* 2026-09-10 by building the wheel
+and listing it: all 15 files plus the licence and the test that reads them. That is deliberate and
+follows the estate convention that a plugin's tests ride in its wheel, so an installed plugin can
+prove itself (`pytest --pyargs tap_plugin.zizmor`) and an agent has the corpus to reason from. What
+fixture data never does is **seed a live grid**: it is not a GRIFT bundle, no boot record imports
+it, and nothing puts a synthetic node on the spine where it would be indistinguishable from an
+observed one. (An earlier draft of this section claimed the corpus "does not ship in the wheel",
+which was simply false — the distinction that matters is shipped-as-test-data versus
+seeded-as-product-data.)
+
+This does not withdraw the in-package `ci` boot record, which exists for a different reason
+(`req-boot-bootstrap-ci-record`) and seeds nothing.
 
 #### Acceptance Criteria
 
 | ACID | Title | Status | Description | Notes |
 | --- | --- | :---: | --- | --- |
-| req-zizmor-record-1 | Record Cold-Resolves | Proposed | The record ships as package data, its declared sha256 matches, it schema-validates, cold-resolves every seed slug and collector key, and self-installs `zizmor` pinned to an immutable tag. | The samsite `test_boot_record_resolves` pattern. |
-| req-zizmor-record-2 | Oracle Agrees | Proposed | After seeding the corpus bundle and firing the collector, every corpus workflow carries exactly the audit IDs the corpus expects for it (no missing, no extra at `auditor` persona), the invalid corpus entry is `parse-failed`, and the empty repository yields no `SCANNED_WORKFLOW` edge. | zizmor's tests are the oracle; ours checks the plumbing. |
-| req-zizmor-record-3 | Fires At Spawn | Proposed | `spawn-session.sh <label> --boot-file <record> --dev-plugins zizmor,github_core` boots healthy, the boot record shows the fire-collector step `ok` with counts, and `/zizmor` renders the corpus findings. | |
-| req-zizmor-record-4 | Runs In CI | Proposed | The in-package suite performs the same seed → fire → assert in plugin CI's boot-and-test leg, with an empty secrets root. | The first collector that actually executes in CI. |
+| req-zizmor-record-1 | Oracle Agrees | Implemented | Every vendored corpus workflow produces the audit upstream named its file for, asserted in one report so a version bump shows the whole delta at once. | zizmor's own naming is the oracle; a corpus we authored would test our idea of the scanner. |
+| req-zizmor-record-2 | Clean Is Not Silence | Implemented | Upstream's known-good workflow yields zero findings AND an `evaluated` coverage edge. | Without this, a collector that produced nothing at all would pass every other assertion. |
+| req-zizmor-record-3 | The States Stay Apart | Implemented | The unparseable entry is `parse-failed` with a reason, the YAML-less row is `no-yaml` with a reason, and every seeded workflow carries exactly one coverage edge. | The three-states rule, mechanized. |
+| req-zizmor-record-4 | Runs In CI | Implemented | The suite runs offline, with no credential and no network, in plugin CI's boot-and-test leg. | |
+| req-zizmor-record-5 | Re-vendoring Is Deliberate | Proposed | The corpus moves only when the `zizmor==` pin moves, and re-vendoring rides its own PR — never a build step. | A corpus that regenerated itself would silently adopt whatever upstream changed, which is the drift it exists to detect. |
+| req-zizmor-record-6 | No Unexpected Findings Either | Implemented | The COMPLETE audit set per corpus file is recorded and asserted, so an extra or misattributed finding fails as loudly as a missing one. | Restores the "no missing, no extra" strength of the withdrawn criterion, which the first draft of this test silently dropped to "the named audit fired". |
+| req-zizmor-record-7 | Provenance Is Checkable | Implemented | `tests/corpus/provenance.json` records each file's upstream git blob SHA at the pinned tag, and a test recomputes it offline. | Byte-identity with upstream becomes a fact a reader can re-derive against github.com, not a claim in a README — and a corpus file edited locally to make a test pass is caught. |
 
-**Verify on first build:** a zizmor corpus bundle seeding `github_core__github_workflow` nodes goes
-through the registry-resolved importer and the service layer, so no rule forbids it, but no plugin
-seeds another plugin's types today (samsite seeds core types only) — the first run says whether the
-type-ownership guard objects. If it does, the corpus bundle moves to github_core as an example-org
-bundle and zizmor's record seeds it from there.
+**Settled on first build:** nothing forbids a plugin seeding another plugin's node type — a
+`github_core__github_workflow` written by zizmor imports cleanly through the registry-resolved
+importer (*observed* 2026-09-10). The type-ownership guard does not object. It is not done anyway,
+per the ruling above: the constraint that mattered was honesty about fabricated data, not
+permission.
 
 ### The Finding Node
 ----
