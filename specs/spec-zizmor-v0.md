@@ -428,6 +428,13 @@ Status: `Proposed`
 | req-zizmor-panel-about-1 | Version From The Run | Proposed | The version and persona shown equal the latest run's recorded values; with no run yet, the panel says so rather than showing a default. | Derive, don't declare. |
 | req-zizmor-panel-about-2 | Skipped Audits Named | Proposed | The four offline-incapable audits are listed as skipped with the reason. |  |
 
+> **Known gap, named not hidden (zizmor-tap#27):** the findings table lists every finding ever
+> observed, not the current state. The collector never tombstones, so a finding that has since been
+> FIXED still renders. Scoping the table to the latest run would be worse — a workflow that run could
+> not read (`no-yaml`, `parse-failed`) would silently lose everything previously known about it. The
+> correct fix is well-founded tombstoning: absence is admissible as evidence exactly on workflows the
+> run actually evaluated.
+
 ### Panel: Coverage
 ----
 RID: `req-zizmor-panel-coverage`

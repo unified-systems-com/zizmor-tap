@@ -276,7 +276,7 @@
           },
           "node": {
             "name": "zizmor Findings",
-            "description": "Every zizmor finding currently on the grid, newest observation first. Findings are keyed on the assertion (workflow, audit, route, persona, fragment) rather than on the run that saw them, so a re-scan re-observes the same node instead of minting a copy \u2014 which is why this reads as current state rather than as one run's output. What it CANNOT say is which workflows were never read; that is the coverage panel's job, and a findings list without it renders silence as safety.",
+            "description": "Every zizmor finding currently on the grid, newest observation first. Findings are keyed on the assertion (workflow, audit, route, persona, fragment) rather than on the run that saw them, so a re-scan re-observes the same node instead of minting a copy. IMPORTANT, until zizmor-tap#27 lands: the collector never tombstones, so a finding that has since been FIXED still appears here \u2014 this is every finding ever observed, not the current state. Scoping it to the latest run would be worse, because a workflow that run could not read (no-yaml, parse-failed) would silently lose everything previously known about it. What this list cannot say at all is which workflows were never read; that is the coverage panel's job, and a findings list without it renders silence as safety.",
             "search_type": "gryphon",
             "root": "node",
             "definition": {
