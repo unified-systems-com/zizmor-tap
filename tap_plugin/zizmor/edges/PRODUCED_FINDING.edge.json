@@ -1,0 +1,16 @@
+{
+  "slug": "PRODUCED_FINDING__zizmor",
+  "name": "Produced Finding",
+  "description": "One execution of the scanner emitted this finding. Every finding is the assertion of a particular binary version at a particular persona over a particular set of workflow rows, and this edge is what makes that provenance walkable: without it a finding is a floating claim with no way back to the conditions that produced it.",
+  "sources": [
+    "zizmor__run"
+  ],
+  "targets": [
+    "zizmor__finding"
+  ],
+  "default_dimensions": {
+    "github.platform": "github.com",
+    "github.surface": "actions",
+    "github.observation": "declaration"
+  }
+}

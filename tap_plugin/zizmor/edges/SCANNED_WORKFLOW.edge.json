@@ -1,0 +1,64 @@
+{
+  "slug": "SCANNED_WORKFLOW__zizmor",
+  "name": "Scanned Workflow",
+  "description": "The run considered this workflow, and the outcome says what actually happened to it. This edge exists so that absence means something: a workflow with no SCANNED_WORKFLOW edge from the current run was NOT observed by this scanner, which is a different fact from a workflow that was scanned and found clean. Coverage is the property that keeps a findings view from rendering silence as safety.",
+  "sources": [
+    "zizmor__run"
+  ],
+  "targets": [
+    "github_core__github_workflow"
+  ],
+  "default_dimensions": {
+    "github.platform": "github.com",
+    "github.surface": "actions",
+    "github.observation": "declaration"
+  },
+  "property_schema": {
+    "type": "object",
+    "required": [
+      "outcome"
+    ],
+    "additionalProperties": false,
+    "description": "What became of this workflow on this run. Every non-evaluated outcome must say why in `reason` — an unexplained `skipped` is the shape that lets a coverage gap read as a clean result.",
+    "properties": {
+      "outcome": {
+        "type": "string",
+        "enum": [
+          "evaluated",
+          "parse-failed",
+          "skipped",
+          "no-yaml"
+        ],
+        "description": "`evaluated`: the scanner read the file and its findings (possibly none) are on the grid. `parse-failed`: the file was materialized but the scanner could not parse it, so this workflow's findings are UNKNOWN, not zero. `skipped`: the collector refused the row before scanning (a path that failed sanitizing, a cap). `no-yaml`: github_core collected the workflow but captured no `raw_yaml` for it, so there was nothing to scan — the most common non-evaluated state on a real grid (40 of 117 workflows, observed 2026-09-10) and the one most likely to be misread as clean."
+      },
+      "reason": {
+        "type": "string",
+        "minLength": 1,
+        "description": "Why the outcome is not `evaluated`, in terms a reader can act on: the parser error, the sanitizing rule that refused the path, or the absence that left nothing to read."
+      }
+    },
+    "allOf": [
+      {
+        "if": {
+          "properties": {
+            "outcome": {
+              "enum": [
+                "parse-failed",
+                "skipped",
+                "no-yaml"
+              ]
+            }
+          },
+          "required": [
+            "outcome"
+          ]
+        },
+        "then": {
+          "required": [
+            "reason"
+          ]
+        }
+      }
+    ]
+  }
+}

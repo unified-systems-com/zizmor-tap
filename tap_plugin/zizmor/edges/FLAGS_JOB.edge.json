@@ -1,0 +1,16 @@
+{
+  "slug": "FLAGS_JOB__zizmor",
+  "name": "Flags Job",
+  "description": "The finding's location resolves to a job DECLARED in the workflow file. Present only when that job exists on the grid: a finding whose job key cannot be resolved carries no edge here and records why it could not, because a guessed endpoint is worse than a missing one. This is the join that lets a finding be read against what the job is permitted to do — its permissions, its runner, the environment it deploys to.",
+  "sources": [
+    "zizmor__finding"
+  ],
+  "targets": [
+    "github_core__workflow_job"
+  ],
+  "default_dimensions": {
+    "github.platform": "github.com",
+    "github.surface": "actions",
+    "github.observation": "declaration"
+  }
+}

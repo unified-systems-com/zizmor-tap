@@ -171,7 +171,7 @@ Status: `Proposed`
 materializes them into a per-run scratch tree (`<scratch root>/<run id>/<repo>/.github/workflows/<path>`, never a fixed or cwd-relative location — concurrent runs cannot collide), refusing any workflow `path` that is absolute, contains `..`, or resolves outside its repository's scratch directory, then invokes
 `zizmor --offline --format json-v1 --persona auditor` over it, and lands one GRIFT batch: the run
 node, the findings, edges from each finding to its workflow (and job when the finding's location
-names one), and the run's `SCANNED` edges with per-workflow outcomes. The scratch tree lives for the
+names one), and the run's `SCANNED_WORKFLOW` edges with per-workflow outcomes. The scratch tree lives for the
 duration of one subprocess call and is removed on exit. The persona is fixed at `auditor` in v0 and recorded on the run. The collector never contacts a
 network and declares no `required_secrets`. Manifest `depends_on` names `github_core` (Tier 1: it imports
 github_core's models to resolve workflow and job endpoints).
@@ -241,7 +241,7 @@ the record fires at spawn.
 | ACID | Title | Status | Description | Notes |
 | --- | --- | :---: | --- | --- |
 | req-zizmor-record-1 | Record Cold-Resolves | Proposed | The record ships as package data, its declared sha256 matches, it schema-validates, cold-resolves every seed slug and collector key, and self-installs `zizmor` pinned to an immutable tag. | The samsite `test_boot_record_resolves` pattern. |
-| req-zizmor-record-2 | Oracle Agrees | Proposed | After seeding the corpus bundle and firing the collector, every corpus workflow carries exactly the audit IDs the corpus expects for it (no missing, no extra at `auditor` persona), the invalid corpus entry is `parse-failed`, and the empty repository yields no `SCANNED` edge. | zizmor's tests are the oracle; ours checks the plumbing. |
+| req-zizmor-record-2 | Oracle Agrees | Proposed | After seeding the corpus bundle and firing the collector, every corpus workflow carries exactly the audit IDs the corpus expects for it (no missing, no extra at `auditor` persona), the invalid corpus entry is `parse-failed`, and the empty repository yields no `SCANNED_WORKFLOW` edge. | zizmor's tests are the oracle; ours checks the plumbing. |
 | req-zizmor-record-3 | Fires At Spawn | Proposed | `spawn-session.sh <label> --boot-file <record> --dev-plugins zizmor,github_core` boots healthy, the boot record shows the fire-collector step `ok` with counts, and `/zizmor` renders the corpus findings. | |
 | req-zizmor-record-4 | Runs In CI | Proposed | The in-package suite performs the same seed → fire → assert in plugin CI's boot-and-test leg, with an empty secrets root. | The first collector that actually executes in CI. |
 
@@ -261,9 +261,10 @@ A typed node `zizmor__finding` (BaseModel, table-prefixed per type ownership) ca
 `audit_url`, `severity`, `confidence`, `persona`, `scanner_version`, `summary`, `location` (path,
 row, column, symbolic route, job key, step index, and the `feature` text as reported), `fixes`
 (zizmor's list of title + disposition safe/unsafe), the raw finding JSON, `tags` (JSON: unresolved job key, `uses` string, secret names and other data-carried facts that have no node yet), `known_since` (first
-observation) and `observed_at`. Edges: `PRODUCED__zizmor` from its run; `FLAGS_WORKFLOW__zizmor`
+observation) and `observed_at`. Edges: `PRODUCED_FINDING__zizmor` from its run; `FLAGS_WORKFLOW__zizmor`
 (finding → `github_workflow`) always; `FLAGS_JOB__zizmor` (finding → `workflow_job`) when the
-location resolves to a declared job. Naming follows the vocabulary corpus's edge rules and the
+location resolves to a declared job; `FLAGS_ACTION__zizmor` (finding → `github_action`) when the
+finding is about a `uses:` reference whose action is on the grid. Naming follows the vocabulary corpus's edge rules and the
 SPDX-first check.
 
 #### Implementation
@@ -286,7 +287,7 @@ collected 2026-09-02:**
 | --- | --- | --- |
 | `github_workflow` | built, on the grid | `FLAGS_WORKFLOW__zizmor` always |
 | `workflow_job` | built (self tier) | `FLAGS_JOB__zizmor` when the location resolves |
-| `github_action` + `USES_ACTION` (`{pin_kind, pinned_sha, declared_ref, resolves_to_fork}`) | corpus: self tier, proposed, **not built** | Nine audits are about `uses:` references (`unpinned-uses`, `stale-action-refs`, `ref-confusion`, `impostor-commit`, `known-vulnerable-actions`, `typosquat-uses`, `archived-uses`, `superfluous-actions`, `forbidden-uses`). Attaching them to the workflow alone loses the join the conjunction feature needs. Not zizmor's to mint — github_core's. v0 carries the `uses` string in `location`; `FLAGS_ACTION__zizmor` is added the day `github_action` lands. File the github_core issue on first light, with finding counts per audit as the evidence. |
+| `github_action` + `USES_ACTION` (`{declared_ref, pin_kind, is_pinned, resolved_sha, resolution, step_indexes}`) | **built** — github_core v0.6.0; *observed* 2026-09-10: 19 `github_action` nodes on a real org collection | Nine audits are about `uses:` references (`unpinned-uses`, `stale-action-refs`, `ref-confusion`, `impostor-commit`, `known-vulnerable-actions`, `typosquat-uses`, `archived-uses`, `superfluous-actions`, `forbidden-uses`). Attaching them to the workflow alone loses the join the conjunction feature needs. The endpoint landed, so `FLAGS_ACTION__zizmor` lands with the rest of the edges rather than waiting (George, 2026-09-10). The node is keyed on the action path with the ref STRIPPED (`identity.github_action_id`), so the finding's reference rides the edge; `pin_kind` / `is_pinned` / `resolved_sha` stay github_core's facts and are never re-derived here. |
 | `actions_secret` | proposed, **not built** | Secrets audits name secrets by string in `tags` until the node exists. |
 | step | corpus ruling: a field, not a node | zizmor reports step indices; the finding keeps them in `location`. A finding needs the job as its endpoint; the ruling holds. |
 
@@ -311,17 +312,17 @@ Status: `In Development`
 Each collector execution lands one `zizmor__run` node: scanner version, persona, audit set,
 started/finished, the github_core collection job it read, the repositories and workflows it covered,
 per-workflow outcome (`evaluated` / `parse-failed` / `skipped`), and finding counts by audit and
-severity. Findings hang off the run that produced them (`PRODUCED__zizmor`, run → finding) and the
-run records what it scanned (`SCANNED__zizmor`, run → workflow, with the outcome on the edge). A
-workflow with no `SCANNED` edge from the current run renders as *not observed by this scanner* in
+severity. Findings hang off the run that produced them (`PRODUCED_FINDING__zizmor`, run → finding) and the
+run records what it scanned (`SCANNED_WORKFLOW__zizmor`, run → workflow, with the outcome on the edge). A
+workflow with no `SCANNED_WORKFLOW` edge from the current run renders as *not observed by this scanner* in
 every consumer. The four online-only audits are recorded as `skipped` on every v0 run.
 
 #### Acceptance Criteria
 
 | ACID | Title | Status | Description | Notes |
 | --- | --- | :---: | --- | --- |
-| req-zizmor-run-1 | Not Scanned Is Visible | Proposed | Remove one workflow's `SCANNED` edge from the current run; the findings table shows it as *not observed by this scanner*, not as clean. | The three-states rule, mechanized. |
-| req-zizmor-run-2 | Counts Match | Proposed | A run's recorded finding counts equal the findings reachable from it by `PRODUCED`; a mismatch fails the collector's own post-check. | Presence is not correctness. |
+| req-zizmor-run-1 | Not Scanned Is Visible | Proposed | Remove one workflow's `SCANNED_WORKFLOW` edge from the current run; the findings table shows it as *not observed by this scanner*, not as clean. | The three-states rule, mechanized. |
+| req-zizmor-run-2 | Counts Match | Proposed | A run's recorded finding counts equal the findings reachable from it by `PRODUCED_FINDING`; a mismatch fails the collector's own post-check. | Presence is not correctness. |
 
 ### Page: Landing
 ----
@@ -403,7 +404,7 @@ Status: `Proposed`
 
 | ACID | Title | Status | Description | Notes |
 | --- | --- | :---: | --- | --- |
-| req-zizmor-panel-findings-table-1 | Not-Observed Rows Present | Proposed | A workflow without a `SCANNED` edge from the latest run appears as a not-observed row, never as absent. | The three-states rule at the panel. |
+| req-zizmor-panel-findings-table-1 | Not-Observed Rows Present | Proposed | A workflow without a `SCANNED_WORKFLOW` edge from the latest run appears as a not-observed row, never as absent. | The three-states rule at the panel. |
 | req-zizmor-panel-findings-table-2 | Filter Round-Trips | Proposed | Filtering by an audit ID shows exactly the findings with that ID and keeps the not-observed rows visible. |  |
 | req-zizmor-panel-findings-table-3 | Mountable Elsewhere | Proposed | git-serious's lint-findings GRIFT mounts the panel type unchanged and the links resolve. | Serves `req-git-serious-workflow-lint-findings-1`. |
 
@@ -435,7 +436,7 @@ Status: `Proposed`
 | ACID | Title | Status | Description | Notes |
 | --- | --- | :---: | --- | --- |
 | req-zizmor-panel-run-summary-1 | Reads The Page Variable | Proposed | With `run_id` set, the panel shows that run; with an unknown id it says the run does not exist rather than rendering empty. |  |
-| req-zizmor-panel-run-summary-2 | Coverage Adds Up | Proposed | Evaluated + parse-failed + skipped equals the number of `SCANNED` edges from the run. |  |
+| req-zizmor-panel-run-summary-2 | Coverage Adds Up | Proposed | Evaluated + parse-failed + skipped + no-yaml equals the number of `SCANNED_WORKFLOW` edges from the run. |  |
 
 ### Panel: Run Detail
 ----
@@ -443,13 +444,13 @@ RID: `req-zizmor-panel-run-detail`
 
 Status: `Proposed`
 
-`zizmor_run_detail` (table panel type, page-variable `run_id`): two tabs or sections — every finding the run produced (as in the findings table, scoped to this run) and every workflow it scanned with the per-workflow outcome from the `SCANNED` edge.
+`zizmor_run_detail` (table panel type, page-variable `run_id`): two tabs or sections — every finding the run produced (as in the findings table, scoped to this run) and every workflow it scanned with the per-workflow outcome from the `SCANNED_WORKFLOW` edge.
 
 #### Acceptance Criteria
 
 | ACID | Title | Status | Description | Notes |
 | --- | --- | :---: | --- | --- |
-| req-zizmor-panel-run-detail-1 | Scoped To The Run | Proposed | Only findings with a `PRODUCED` edge from this run appear; the scanned-workflows list equals the run's `SCANNED` edges. |  |
+| req-zizmor-panel-run-detail-1 | Scoped To The Run | Proposed | Only findings with a `PRODUCED_FINDING` edge from this run appear; the scanned-workflows list equals the run's `SCANNED_WORKFLOW` edges. |  |
 | req-zizmor-panel-run-detail-2 | Drill-In | Proposed | Finding cells link to finding pages; workflow cells link to github_core pages. |  |
 
 ### Panel: Finding Detail
@@ -590,10 +591,21 @@ sibling plugin or a scanner dimension on this one is decided when the second sca
 
 | Edge | From → To | Properties | Rationale |
 | --- | --- | --- | --- |
-| `PRODUCED__zizmor` | run → finding | — | Which execution produced the finding. |
-| `SCANNED__zizmor` | run → `github_workflow` | `{outcome: evaluated \| parse-failed \| skipped}` | Coverage; the absence of this edge is the not-observed state. |
+| `PRODUCED_FINDING__zizmor` | run → finding | — | Which execution produced the finding. |
+| `SCANNED_WORKFLOW__zizmor` | run → `github_workflow` | `{outcome: evaluated \| parse-failed \| skipped \| no-yaml, reason}` | Coverage; the absence of this edge is the not-observed state. `reason` is required for every outcome except `evaluated`. |
 | `FLAGS_WORKFLOW__zizmor` | finding → `github_workflow` | — | Every finding locates a workflow file. |
 | `FLAGS_JOB__zizmor` | finding → `workflow_job` | — | When the location names a declared job; the conjunction join. |
+| `FLAGS_ACTION__zizmor` | finding → `github_action` | `{uses}` | When the finding is about a `uses:` reference. The action node is keyed with the ref stripped, so the reference rides the edge; the pin's MEANING stays github_core's `USES_ACTION` fact. |
+
+**Slugs.** `PRODUCED` and `SCANNED` were the names through 2026-09-02; both are bare verbs and fail
+core's edge-naming guard (`<ACTION>_<OBJECT>`, `tap_plugins/validate/service.py` `_edge_naming_violations`,
+verified failing 2026-09-10), so they carry their object nouns. A baseline exemption was rejected: a
+brand-new edge does not get to start as debt.
+
+**`no-yaml` is the fourth outcome.** The three named through 2026-09-02 missed the common case. On a
+real org collection (24 repositories, *observed* 2026-09-10) **40 of 117 workflows carried no
+`raw_yaml`** — collected by github_core, but with no body to scan. That is neither `skipped` nor
+clean, and `ZizmorRun.workflows_no_yaml` already treated it as its own state.
 
 ## Reference data
 
