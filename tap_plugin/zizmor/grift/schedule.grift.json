@@ -1,0 +1,62 @@
+{
+  "metadata": {
+    "grift_version": "0"
+  },
+  "_reserved": {},
+  "batches": [
+    {
+      "batch_entity": {
+        "entity_id": "01a08cbc-ba1a-7451-a9c5-9cce94ba1756",
+        "entity_type": "batch",
+        "name": "zizmor collector schedule",
+        "dimensions": {}
+      },
+      "batch_node": {
+        "source": "plugins.zizmor.grift.schedule",
+        "name": "zizmor collector schedule",
+        "description": "Seeds the tap_cares schedule that fires zizmor:zizmor on its own cadence, independent of github_core's collection. See req-zizmor-trigger in specs/spec-zizmor-v0.md.",
+        "description_json": {
+          "format": "tap.zizmor.schedule-v0",
+          "data": {
+            "collector": "zizmor:zizmor",
+            "cron": "23 */6 * * *",
+            "cost_per_fire": "No API calls and no credential: the collector reads workflow rows already on the grid and runs a local binary. One fire costs a subprocess per workflow with raw_yaml (~41 ms each; ~3 s for the 77 observed on a real organisation), so the cadence is chosen for freshness, not for a quota."
+          }
+        }
+      },
+      "nodes": [
+        {
+          "entity": {
+            "entity_id": "01a08cbc-ba1a-7451-a9c5-9ccfa2f2c649",
+            "entity_type": "schedule",
+            "name": "zizmor audit",
+            "dimensions": {}
+          },
+          "node": {
+            "name": "zizmor audit",
+            "description": "Re-audits every workflow on the grid with the pinned zizmor binary, offline. Owned by this plugin rather than by a consumer because the finding set is a property of the scanner and its pin, not of any one product's page: a zizmor bump changes what is true here even if no workflow changed. Runs at :23 past, four times a day - off the hour so it does not pile onto the top-of-hour scheduler tick alongside every other cadence. A fire that finds a github_core collection still running finalizes as skipped and creates no run node, because a run that read rows mid-write would report a coverage number it cannot stand behind. Disable or re-time this freely; Schedule is user-editable.",
+            "enabled": true,
+            "cron_expression": "23 */6 * * *",
+            "max_active_runs": 1
+          }
+        }
+      ],
+      "edges": [
+        {
+          "entity": {
+            "entity_id": "01a08cbc-ba1a-7451-a9c5-9cd0008e9e0b",
+            "entity_type": "edge",
+            "name": "SCHEDULED_TARGET",
+            "dimensions": {}
+          },
+          "edge": {
+            "from_entity_id": "01a08cbc-ba1a-7451-a9c5-9ccfa2f2c649",
+            "to_entity_id": "6e4bf520-23a9-5c7c-8840-2dfaf1d47a58",
+            "edge_type": "SCHEDULED_TARGET",
+            "properties": {}
+          }
+        }
+      ]
+    }
+  ]
+}
