@@ -31,6 +31,7 @@ from tap_cares.collectors.config import CollectorConfig
 from tap_cares.models import CollectionJob, CollectionJobStatus
 from tap_cares.registry import NAMESPACE_COLLECTOR
 from tap_grid.models import Edge, Entity
+from tap_grid.services import create_node
 
 BUNDLE = Path(__file__).resolve().parent.parent / "grift" / "schedule.grift.json"
 UPSTREAM_KEY = "github_core:github_core"
@@ -86,9 +87,7 @@ def _seed_upstream_job(status: str) -> str:
         finished_at=timezone.now() if status == CollectionJobStatus.SUCCESSFUL else None,
     )
     Edge.objects.create(
-        entity=Entity.objects.create(
-            id=uuid.uuid7(), entity_type="edge", name="HAS_COLLECTION_JOB", dimensions={}
-        ),
+        entity=Entity.objects.create(id=uuid.uuid7(), entity_type="edge", name="HAS_COLLECTION_JOB", dimensions={}),
         from_entity_id=collector_uuid,
         to_entity_id=job_entity.id,
         edge_type="HAS_COLLECTION_JOB",
@@ -98,9 +97,7 @@ def _seed_upstream_job(status: str) -> str:
 
 
 def _collector() -> ZizmorCollector:
-    return ZizmorCollector(
-        CollectorConfig(collector_entity_id=uuid.uuid7(), collection_job_entity_id=uuid.uuid7())
-    )
+    return ZizmorCollector(CollectorConfig(collector_entity_id=uuid.uuid7(), collection_job_entity_id=uuid.uuid7()))
 
 
 @pytest.mark.parametrize("status", [CollectionJobStatus.RUNNING, CollectionJobStatus.READY])
@@ -152,3 +149,47 @@ def test_a_run_that_proceeds_names_the_collection_it_read(db: None) -> None:
     job = _seed_upstream_job(CollectionJobStatus.SUCCESSFUL)
 
     assert ZizmorCollector._latest_upstream_job() == job
+
+
+def test_an_upstream_collection_that_starts_mid_run_discards_the_scan(db: None) -> None:
+    """The check/use race the first guard cannot close, closed at the other end.
+
+    The guard at the top of `run()` proves only that no collection was in flight when the audit
+    STARTED. One can begin while rows are being read, and the findings would then describe a grid
+    being rewritten underneath them. Re-checking before landing is what makes the published coverage
+    number one the run can stand behind; discarding a completed offline pass is the cheap side of
+    that trade.
+    """
+    _seed_upstream_job(CollectionJobStatus.SUCCESSFUL)  # lets the run start
+    # A workflow with real YAML, so the run gets past collection and all the way to landing —
+    # which is the only place the race can be observed.
+    created = create_node(
+        "github_core__github_workflow",
+        {
+            "name": "ci",
+            "full_name": "acme/repo",
+            "workflow_id": 4242,
+            "path": ".github/workflows/ci.yml",
+            "state": "active",
+            "configuration": {"raw_yaml": "name: ci\non: push\njobs:\n  b:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@main\n"},
+        },
+    )
+    assert created.success, created.errors
+    collector = _collector()
+
+    real_check = collector._active_upstream_job
+    calls: list[int] = []
+
+    def _racing() -> str | None:
+        calls.append(1)
+        # Clear on the way in; a collection appears by the time we are ready to land.
+        return None if len(calls) == 1 else _seed_upstream_job(CollectionJobStatus.RUNNING)
+
+    collector._active_upstream_job = _racing  # type: ignore[method-assign]
+    collector.run()
+
+    assert ZizmorRun.objects.count() == 0, "a raced run must land nothing at all"
+    codes = {e["message_code"] for e in collector.results["info"]}
+    assert "UPSTREAM_COLLECTION_RACED" in codes
+    assert not collector.results["error"], "losing a race is a normal outcome, not a failure"
+    assert real_check is not None

@@ -64,6 +64,7 @@ _SITE_SCRATCH_RESIDUE = "6f09"
 _SITE_RUN_FINISHED = "f9da"
 _SITE_NO_WORKFLOW_ENDPOINT = "807b"
 _SITE_UPSTREAM_ACTIVE = "a22a"
+_SITE_UPSTREAM_RACED = "888d"
 
 EDGE_PRODUCED_FINDING = "PRODUCED_FINDING__zizmor"
 EDGE_SCANNED_WORKFLOW = "SCANNED_WORKFLOW__zizmor"
@@ -158,6 +159,26 @@ class ZizmorCollector(CollectorBase):
                     "The per-run scratch tree could not be fully removed.",
                     message_data={"scratch_root": str(scratch_root)},
                 )
+
+        # Re-check before landing anything (closes the check/use race the first guard cannot).
+        # The guard at the top of run() only proves no collection was in flight when we STARTED;
+        # one can begin while we are reading rows, and the findings would then describe a grid
+        # half-written. Discarding a completed scan is cheap — it costs one offline pass — and it is
+        # the only way the coverage number this run publishes can be one it stands behind.
+        raced = self._active_upstream_job()
+        if raced is not None:
+            self.summary = (
+                f"Discarded: github_core collection job {raced} started while this audit was "
+                "reading, so its coverage would describe a grid that was being rewritten underneath "
+                "it. Nothing was landed."
+            )
+            self.record_info(
+                _SITE_UPSTREAM_RACED,
+                "UPSTREAM_COLLECTION_RACED",
+                self.summary,
+                message_data={"github_core_collection_job": raced, "findings_discarded": len(state.findings)},
+            )
+            return
 
         self._finalize(state, source_job=source_job)
 
