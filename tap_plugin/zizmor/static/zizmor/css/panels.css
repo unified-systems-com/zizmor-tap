@@ -374,3 +374,47 @@
 .tap-zizmor-src__c code { font-size: inherit; background: none; border: 0; padding: 0; }
 .tap-zizmor-src__l--hit { background: rgba(161, 92, 0, .13); }
 .tap-zizmor-src__l--hit .tap-zizmor-src__n { opacity: .8; font-weight: 600; box-shadow: inset 3px 0 0 #a15c00; }
+
+/* ---- workflow source with margin call-outs (req-zizmor-panel-workflow-source) ------------------
+   Tufte's arrangement: the text in the main measure, notes in the right margin level with the line
+   they annotate, numbered so a sup on the line and a number on the note find each other. */
+.tap-zizmor-annot__head { margin: 0 0 .75rem; }
+.tap-zizmor-annot__repo { margin: 0; font-size: .78rem; letter-spacing: .04em; text-transform: uppercase; opacity: .62; }
+.tap-zizmor-annot__title { margin: .1rem 0 .35rem; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 1.25rem; font-weight: 600; }
+.tap-zizmor-annot__title a { color: inherit; text-decoration: none; border-bottom: 1px solid rgba(128,128,128,.4); }
+.tap-zizmor-annot__verdict { margin: 0; font-size: .92rem; }
+.tap-zizmor-annot__verdict--found strong:first-of-type { color: #8250df; }
+.tap-zizmor-annot__verdict--unknown, .tap-zizmor-annot__verdict--never { color: #57606a; }
+.tap-zizmor-annot__wf { margin-left: .6rem; font-size: .82rem; opacity: .75; }
+.tap-zizmor-annot__grid {
+    display: grid; grid-template-columns: 3.4rem minmax(0, 1fr) minmax(16rem, 24rem);
+    column-gap: 0; align-items: start;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .8rem; line-height: 1.5rem;
+    border: 1px solid rgba(128,128,128,.22); border-radius: 3px; overflow: auto; max-height: 72vh;
+}
+.tap-zizmor-annot__n { grid-column: 1; text-align: right; padding: 0 .35rem 0 .4rem; user-select: none; opacity: .45; white-space: nowrap; }
+.tap-zizmor-annot__c { grid-column: 2; white-space: pre; padding: 0 .75rem 0 .5rem; background: none; border: 0; font-size: inherit; min-height: 1.5rem; }
+.tap-zizmor-annot__c--bad   { background: rgba(207, 34, 46, .12); box-shadow: inset 3px 0 0 #cf222e; }
+.tap-zizmor-annot__c--warn  { background: rgba(154, 103, 0, .13); box-shadow: inset 3px 0 0 #9a6700; }
+.tap-zizmor-annot__c--muted { background: rgba(110, 119, 129, .12); box-shadow: inset 3px 0 0 #6e7781; }
+.tap-zizmor-annot__n--bad, .tap-zizmor-annot__n--warn, .tap-zizmor-annot__n--muted { opacity: .85; font-weight: 600; }
+.tap-zizmor-annot__sup { display: inline-block; min-width: .9rem; margin-left: .15rem; vertical-align: super; font-size: .58rem; line-height: 1; font-weight: 700; color: #8250df; font-family: system-ui, sans-serif; text-align: left; }
+.tap-zizmor-annot__note {
+    grid-column: 3; align-self: start; margin: .1rem .6rem .35rem .8rem; padding: .15rem 0 .15rem .65rem;
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif; font-size: .78rem; line-height: 1.25;
+    border-left: 2px solid #8250df;
+}
+.tap-zizmor-annot__note--warn  { border-left-color: #9a6700; }
+.tap-zizmor-annot__note--muted { border-left-color: #6e7781; }
+.tap-zizmor-annot__item { display: flex; gap: .4rem; color: inherit; text-decoration: none; padding: .15rem 0; }
+.tap-zizmor-annot__item:hover .tap-zizmor-annot__summary { text-decoration: underline; }
+.tap-zizmor-annot__num { flex: 0 0 auto; font-size: .68rem; font-weight: 700; color: #8250df; padding-top: .1rem; }
+.tap-zizmor-annot__audit { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .74rem; opacity: .8; }
+.tap-zizmor-annot__summary { opacity: .92; }
+.tap-zizmor-annot__job { opacity: .62; }
+.tap-zizmor-annot__list { font-size: .85rem; }
+.tap-zizmor-annot__span { opacity: .6; font-size: .78rem; }
+@media (max-width: 900px) {
+    .tap-zizmor-annot__grid { grid-template-columns: 3rem minmax(0, 1fr); }
+    .tap-zizmor-annot__note { grid-column: 2; grid-row: auto !important; margin: .2rem .5rem .5rem 3.5rem; }
+}

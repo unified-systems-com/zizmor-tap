@@ -1,0 +1,62 @@
+{% load static %}
+<div class="tap-panel tap-panel--zizmor-workflow-source tap-zizmor-annot">
+{% if state == "no_selection" %}
+    <p class="tap-zizmor-finding__empty">Open this page with <code>?workflow_id=&lt;GitHub workflow id&gt;</code> — it is reached from a workflow's card, the findings table, or a finding.</p>
+{% elif state == "not_found" %}
+    <p class="tap-zizmor-finding__empty">No workflow with id <code>{{ requested }}</code> is on this grid.</p>
+{% else %}
+    <header class="tap-zizmor-annot__head">
+        <p class="tap-zizmor-annot__repo">{{ workflow.full_name }}</p>
+        <h3 class="tap-zizmor-annot__title">{% if workflow_url %}<a href="{{ workflow_url }}">{{ workflow.path }}</a>{% else %}{{ workflow.path }}{% endif %}</h3>
+        <p class="tap-zizmor-annot__verdict tap-zizmor-annot__verdict--{% if scan.outcome == "evaluated" %}{% if finding_count %}found{% else %}clean{% endif %}{% elif scan.outcome %}unknown{% else %}never{% endif %}">
+            {% if scan.outcome == "evaluated" %}
+                {% if finding_count %}zizmor read this file and left <strong>{{ finding_count }}</strong> finding{{ finding_count|pluralize }} on it{% if loud_count %} — <strong>{{ loud_count }}</strong> High or Medium{% endif %}.
+                {% else %}zizmor read this file and found nothing.{% endif %}
+            {% elif scan.outcome %}
+                zizmor could <strong>not</strong> read this file (<code>{{ scan.outcome }}</code>){% if scan.reason %}: {{ scan.reason }}{% endif %} Its findings are <strong>unknown</strong>, not zero.
+            {% else %}
+                No zizmor run has considered this file yet. Its findings are <strong>unknown</strong>, not zero.
+            {% endif %}
+            {% if workflow_url %}<a class="tap-zizmor-annot__wf" href="{{ workflow_url }}">The workflow itself — jobs, runs ↗</a>{% endif %}
+        </p>
+    </header>
+
+    {% if has_body %}
+    <div class="tap-zizmor-annot__grid">
+        {% for r in rows %}
+        <span class="tap-zizmor-annot__n{% if r.tone %} tap-zizmor-annot__n--{{ r.tone }}{% endif %}" style="grid-row: {{ r.n }}">{{ r.n }}{% if r.callout %}<sup class="tap-zizmor-annot__sup">{% for num in r.callout.numbers %}{{ num }}{% if not forloop.last %},{% endif %}{% endfor %}</sup>{% endif %}</span>
+        <code class="tap-zizmor-annot__c{% if r.tone %} tap-zizmor-annot__c--{{ r.tone }}{% endif %}" style="grid-row: {{ r.n }}">{{ r.text }} </code>
+        {% if r.callout %}
+        <aside class="tap-zizmor-annot__note tap-zizmor-annot__note--{{ r.callout.tone }}" style="grid-row: {{ r.callout.grid_start }} / {{ r.callout.grid_end }}">
+            {% for it in r.callout.items %}
+            <a class="tap-zizmor-annot__item" href="{{ it.url }}">
+                <span class="tap-zizmor-annot__num">{{ it.n }}</span>
+                <span class="tap-zizmor-annot__body"><span class="tap-zizmor-badge tap-zizmor-badge--{{ it.tone }}">{{ it.severity }}</span> <span class="tap-zizmor-annot__audit">{{ it.audit_id }}</span><br><span class="tap-zizmor-annot__summary">{{ it.summary }}</span>{% if it.job_key %} <span class="tap-zizmor-annot__job">in job <code>{{ it.job_key }}</code></span>{% endif %}</span>
+            </a>
+            {% endfor %}
+        </aside>
+        {% endif %}
+        {% endfor %}
+    </div>
+    {% if callouts %}
+    <script>
+    (function () {
+        document.querySelectorAll(".tap-zizmor-annot__grid").forEach(function (grid) {
+            var first = grid.querySelector(".tap-zizmor-annot__note");
+            if (first) { grid.scrollTop = Math.max(0, first.offsetTop - grid.clientHeight / 4); }
+        });
+    })();
+    </script>
+    {% endif %}
+    {% else %}
+        <p class="tap-zizmor-src__cap">github_core has no collected body for this workflow, so the file cannot be shown{% if callouts %} — the findings zizmor recorded on it are listed instead{% endif %}.</p>
+        {% if callouts %}
+        <ol class="tap-zizmor-annot__list">
+            {% for c in callouts %}{% for it in c.items %}
+            <li><a href="{{ it.url }}"><span class="tap-zizmor-badge tap-zizmor-badge--{{ it.tone }}">{{ it.severity }}</span> {{ it.audit_id }} — {{ it.summary }} <span class="tap-zizmor-annot__span">line {{ it.span }}</span></a></li>
+            {% endfor %}{% endfor %}
+        </ol>
+        {% endif %}
+    {% endif %}
+{% endif %}
+</div>

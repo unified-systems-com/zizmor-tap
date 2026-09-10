@@ -42,9 +42,11 @@ class ZizmorConfig(TapPluginConfig):
         from tap_plugin.zizmor.panels.about import ZizmorAboutPanelType
         from tap_plugin.zizmor.panels.coverage import ZizmorCoveragePanelType
         from tap_plugin.zizmor.panels.finding_detail import ZizmorFindingDetailPanelType
+        from tap_plugin.zizmor.panels.workflow_source import ZizmorWorkflowSourcePanelType
 
         from tap_web.registry import panel_type_registry
 
         panel_type_registry.register(ZizmorAboutPanelType.slug, ZizmorAboutPanelType)
         panel_type_registry.register(ZizmorCoveragePanelType.slug, ZizmorCoveragePanelType)
         panel_type_registry.register(ZizmorFindingDetailPanelType.slug, ZizmorFindingDetailPanelType)
+        panel_type_registry.register(ZizmorWorkflowSourcePanelType.slug, ZizmorWorkflowSourcePanelType)

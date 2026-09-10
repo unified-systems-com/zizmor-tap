@@ -6,15 +6,15 @@
   "batches": [
     {
       "batch_entity": {
-        "entity_id": "01a08d89-03ab-74da-b7db-08fa56f1d3d8",
+        "entity_id": "01a08db6-4016-7590-b5cc-020b17c85a89",
         "entity_type": "batch",
-        "name": "zizmor Pages v0.3.0",
+        "name": "zizmor Pages v0.4.0",
         "dimensions": {}
       },
       "batch_node": {
         "source": "plugins.zizmor.grift.pages",
-        "name": "zizmor Pages v0.3.0",
-        "description": "Seeds /zizmor (about, findings, coverage, runs) and /zizmor/finding — one finding in full, reached from any audit cell on the findings table. See req-zizmor-page-landing and req-zizmor-page-finding. v0.3.0 (zizmor-tap#31): the findings table's badges actually render — tone maps for severity and confidence (Low only), datetime formatters on both timestamps, the stray column-level capitalize gone; /zizmor/finding leaves the navigation (it needs ?finding_id=); the finding-detail panel gains workflow_page_template, /github_core/workflow?workflow_id={workflow_id}, the key that page takes since tap-plugin-github-core#101. Panel and page node upserts; every id stable, batch id moved."
+        "name": "zizmor Pages v0.4.0",
+        "description": "Seeds /zizmor (about, findings, coverage, runs) and /zizmor/finding — one finding in full, reached from any audit cell on the findings table. See req-zizmor-page-landing and req-zizmor-page-finding. v0.3.0 (zizmor-tap#31): the findings table's badges actually render — tone maps for severity and confidence (Low only), datetime formatters on both timestamps, the stray column-level capitalize gone; /zizmor/finding leaves the navigation (it needs ?finding_id=); the finding-detail panel gains workflow_page_template, /github_core/workflow?workflow_id={workflow_id}, the key that page takes since tap-plugin-github-core#101. Panel and page node upserts; every id stable, batch id moved. v0.4.0 (zizmor-tap#33): the workflow page — /zizmor/workflow?workflow_id=… — one file, every finding on it: the annotated source with call-outs in the right margin (zizmor-workflow-source), then the same findings as a table over a per-workflow search (envelope mode, workflow_id typed integer). Not discoverable. One page, two panels, one search, three edges; every prior id stable."
       },
       "nodes": [
         {
@@ -385,6 +385,203 @@
               "workflow_page_template": "/github_core/workflow?workflow_id={workflow_id}"
             }
           }
+        },
+        {
+          "entity": {
+            "entity_id": "01a08db6-4016-7590-b5cc-020c50cdd636",
+            "entity_type": "page",
+            "name": "zizmor Workflow",
+            "dimensions": {
+              "tap.graph": "web"
+            }
+          },
+          "node": {
+            "slug": "/zizmor/workflow",
+            "name": "zizmor Workflow",
+            "nav_weight": 0,
+            "discoverable": false,
+            "description": "One workflow file and every zizmor finding on it (req-zizmor-page-workflow): the annotated source with call-outs in the right margin, then the same findings as a table. Keyed by ?workflow_id= — GitHub's numeric id, the key github_core's workflow page and every consumer's nav rules pass — so it is not discoverable: from the menu it has nothing to show.",
+            "layout": {
+              "columns": {
+                "col-1": {
+                  "width": "1fr",
+                  "rows": {
+                    "row-1-source": {
+                      "panel-id": "source",
+                      "height": "auto"
+                    },
+                    "row-2-findings": {
+                      "panel-id": "findings",
+                      "height": "auto"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "entity": {
+            "entity_id": "01a08db6-4016-7590-b5cc-020d50976547",
+            "entity_type": "panel",
+            "name": "Annotated source",
+            "dimensions": {
+              "tap.graph": "web"
+            }
+          },
+          "node": {
+            "slug": "zizmor-workflow-source",
+            "name": "Annotated source",
+            "view": "zizmor/panels/workflow_source.html",
+            "editor_view": "",
+            "description": "The whole workflow file, numbered, every finding's span marked in its severity's tone, and a call-out in the right margin level with each span's first line — click it for the finding. The verdict line above the file names the third state: read and found nothing, read and found N, or could NOT read (findings unknown, not zero).",
+            "config": {
+              "hide_header": true,
+              "workflow_page_template": "/github_core/workflow?workflow_id={workflow_id}"
+            }
+          }
+        },
+        {
+          "entity": {
+            "entity_id": "01a08db6-4016-7590-b5cc-020e576d2e74",
+            "entity_type": "search",
+            "name": "zizmor Findings on one workflow",
+            "dimensions": {
+              "tap.graph": "web"
+            }
+          },
+          "node": {
+            "name": "zizmor Findings on one workflow",
+            "description": "Every zizmor finding whose FLAGS_WORKFLOW edge lands on the workflow with the given GitHub workflow_id (zizmor-tap#28). Envelope mode (RETURN f) for the table; no ORDER BY — refused on a traversal (req-grid-gryphon-order-by-envelope), the table sorts client-side. Cumulative, not current (no tombstoning yet, zizmor-tap#27). Consumers point USES_SEARCH at this node; do not copy the query.",
+            "search_type": "gryphon",
+            "root": "node",
+            "definition": {
+              "query": [
+                "MATCH (f:zizmor__finding)-[:FLAGS_WORKFLOW__zizmor]->(w:github_core__github_workflow)",
+                "WHERE w.data.workflow_id = $workflow_id",
+                "RETURN f"
+              ]
+            },
+            "input_schema": {
+              "type": "object",
+              "properties": {
+                "workflow_id": {
+                  "type": "integer",
+                  "description": "GitHub's numeric workflow id (github_workflow.workflow_id), from the page URL ?workflow_id=… Typed integer so the page's string is coerced before it meets the integer field."
+                }
+              },
+              "required": [
+                "workflow_id"
+              ],
+              "additionalProperties": false
+            },
+            "max_limit": 1000
+          }
+        },
+        {
+          "entity": {
+            "entity_id": "01a08db6-4016-7590-b5cc-020f77a701fb",
+            "entity_type": "panel",
+            "name": "Findings on this file",
+            "dimensions": {
+              "tap.graph": "web"
+            }
+          },
+          "node": {
+            "slug": "zizmor-workflow-findings-table",
+            "name": "Findings on this file",
+            "view": "tap_web/panels/table_panel.html",
+            "editor_view": "",
+            "description": "The same findings as the annotated source above, as a sortable table — by severity, audit, job, when first seen. Row click opens the finding (row_url_template).",
+            "config": {
+              "hide_header": false,
+              "height": 420,
+              "quick_filter": true,
+              "default_page_size": 100,
+              "row_url_template": "/zizmor/finding?finding_id={entity_id}",
+              "columns": [
+                {
+                  "field": "data.audit_id",
+                  "title": "Audit",
+                  "width": 200,
+                  "headerSort": true,
+                  "header_tooltip": "zizmor's own name for the rule that fired. Click through for the finding in full — where it is, what the job it sits in is permitted to do, and how long it has been there.",
+                  "formatter": "link",
+                  "formatter_params": {
+                    "href_template": "/zizmor/finding?finding_id={data.entity_id}"
+                  }
+                },
+                {
+                  "field": "data.severity",
+                  "title": "Severity",
+                  "width": 110,
+                  "align": "center",
+                  "headerSort": true,
+                  "formatter": "toneBadge",
+                  "header_tooltip": "zizmor's severity for this finding: High, Medium, Low, Informational, or Unknown.",
+                  "formatter_params": {
+                    "tones": {
+                      "High": "bad",
+                      "Medium": "warn",
+                      "Low": "muted",
+                      "Informational": "muted"
+                    }
+                  }
+                },
+                {
+                  "field": "data.confidence",
+                  "title": "Confidence",
+                  "width": 110,
+                  "align": "center",
+                  "headerSort": true,
+                  "formatter": "toneBadge",
+                  "header_tooltip": "How sure zizmor is. Only Low is marked — it is the one value that changes how you read the finding. Low confidence is not a false positive, but it is a hint about reading order.",
+                  "formatter_params": {
+                    "tones": {
+                      "Low": "warn"
+                    }
+                  }
+                },
+                {
+                  "field": "data.persona",
+                  "title": "Persona",
+                  "width": 100,
+                  "align": "center",
+                  "headerSort": true,
+                  "header_tooltip": "The persona this finding belongs to. An auditor run emits Regular, Pedantic and Auditor findings together, and which one this is decides whether it is worth acting on."
+                },
+                {
+                  "field": "data.location.job_key",
+                  "title": "Job",
+                  "width": 140,
+                  "headerSort": true,
+                  "header_tooltip": "The job the finding sits in, when its location names one. Blank means the finding is workflow-level, not that the job is unknown."
+                },
+                {
+                  "field": "data.location.subfeature",
+                  "title": "Fragment",
+                  "width": 160,
+                  "header_tooltip": "The exact expression the finding is about, when zizmor narrowed to one — far more useful than the whole run: block it sits in."
+                },
+                {
+                  "field": "data.observed_at",
+                  "title": "Observed",
+                  "width": 170,
+                  "headerSort": true,
+                  "header_tooltip": "When the most recent run saw this finding.",
+                  "formatter": "datetime"
+                },
+                {
+                  "field": "data.known_since",
+                  "title": "Known since",
+                  "width": 170,
+                  "headerSort": true,
+                  "header_tooltip": "When this finding was FIRST seen. It does not reset when a later run re-observes the same finding, so the gap between the two columns is how long the defect has been there.",
+                  "formatter": "datetime"
+                }
+              ]
+            }
+          }
         }
       ],
       "edges": [
@@ -514,6 +711,60 @@
                 "value": "detail"
               }
             }
+          }
+        },
+        {
+          "entity": {
+            "entity_id": "01a08db6-4016-7590-b5cc-0210690d7468",
+            "entity_type": "edge",
+            "name": "Workflow page USES_PANEL Annotated source",
+            "dimensions": {}
+          },
+          "edge": {
+            "from_entity_id": "01a08db6-4016-7590-b5cc-020c50cdd636",
+            "to_entity_id": "01a08db6-4016-7590-b5cc-020d50976547",
+            "edge_type": "USES_PANEL",
+            "properties": {
+              "hotlink": {
+                "model": "page",
+                "spec": "page-panels",
+                "value": "source"
+              }
+            }
+          }
+        },
+        {
+          "entity": {
+            "entity_id": "01a08db6-4016-7590-b5cc-0211d059e69d",
+            "entity_type": "edge",
+            "name": "Workflow page USES_PANEL Findings on this file",
+            "dimensions": {}
+          },
+          "edge": {
+            "from_entity_id": "01a08db6-4016-7590-b5cc-020c50cdd636",
+            "to_entity_id": "01a08db6-4016-7590-b5cc-020f77a701fb",
+            "edge_type": "USES_PANEL",
+            "properties": {
+              "hotlink": {
+                "model": "page",
+                "spec": "page-panels",
+                "value": "findings"
+              }
+            }
+          }
+        },
+        {
+          "entity": {
+            "entity_id": "01a08db6-4016-7590-b5cc-0212cc803360",
+            "entity_type": "edge",
+            "name": "Findings on this file USES_SEARCH findings on one workflow",
+            "dimensions": {}
+          },
+          "edge": {
+            "from_entity_id": "01a08db6-4016-7590-b5cc-020f77a701fb",
+            "to_entity_id": "01a08db6-4016-7590-b5cc-020e576d2e74",
+            "edge_type": "USES_SEARCH",
+            "properties": {}
           }
         }
       ]

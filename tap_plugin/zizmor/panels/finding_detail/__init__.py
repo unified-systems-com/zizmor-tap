@@ -44,14 +44,11 @@ if TYPE_CHECKING:
 
 DEFAULT_FINDING_VAR = "finding_id"
 
-#: Where to send a reader who wants the workflow itself — its anatomy, its jobs, its run history.
-#: NOT hardcoded: zizmor depends on github_core, not on any product's pages, so the consuming
-#: instance names the target in panel config as a URL template (`workflow_page_template`) with
-#: `{full_name}`, `{path}` and `{workflow_id}` placeholders — the same idiom as a graph panel's
-#: nav_rules. A template rather than a slug-plus-variable because the generic viewer is keyed by
-#: repository AND file, not by a single id. The link renders only when the page it names exists on
-#: this grid, so a deployment without one gets no link rather than a dead one.
-WORKFLOW_PAGE_FIELDS = ("full_name", "path", "workflow_id")
+from tap_plugin.zizmor.panels._workflow import (  # noqa: E402 — derived once for every zizmor panel
+    file_page_url,
+    workflow_body_lines,
+    workflow_page_url,
+)
 
 EDGE_PRODUCED_FINDING = "PRODUCED_FINDING__zizmor"
 EDGE_FLAGS_WORKFLOW = "FLAGS_WORKFLOW__zizmor"
@@ -138,6 +135,8 @@ class ZizmorFindingDetailPanelType:
             "bearing": cls._bearing(finding, cls._workflow(finding)),
             "workflow_url": cls._workflow_url(panel, cls._workflow(finding)),
             "source": cls._source(location, cls._workflow(finding)),
+            # zizmor's own page for the whole file — every finding on it, annotated — when seeded.
+            "file_page_url": file_page_url(cls._workflow(finding)),
         }
 
     # ------------------------------------------------------------------
@@ -157,12 +156,12 @@ class ZizmorFindingDetailPanelType:
         """
         start = location.get("row") or 0
         end = location.get("end_row") or start
-        body = ((getattr(workflow, "configuration", None) or {}).get("raw_yaml") or "") if workflow else ""
-        if body:
+        body_lines = workflow_body_lines(workflow)
+        if body_lines:
             return {
                 "lines": [
                     {"n": i, "text": text, "hit": bool(start) and start <= i <= end}
-                    for i, text in enumerate(body.splitlines(), start=1)
+                    for i, text in enumerate(body_lines, start=1)
                 ],
                 "whole": True,
                 "first_hit": start or None,
@@ -179,30 +178,8 @@ class ZizmorFindingDetailPanelType:
 
     @classmethod
     def _workflow_url(cls, panel: Panel, workflow: GithubWorkflow | None) -> str:
-        """A link to the workflow's own page, or "" when this grid has no such page.
-
-        Checked against the live Page rather than assumed: a dead link that looks live is worse
-        than no link, and which page plays this role is the instance's choice, not zizmor's.
-        A placeholder with no value voids the whole link, for the same reason.
-        """
-        from urllib.parse import quote
-
-        from tap_web.models import Page
-
-        template = ((getattr(panel, "config", None) or {}).get("workflow_page_template") or "").strip()
-        if not template or workflow is None:
-            return ""
-        url = template
-        for field in WORKFLOW_PAGE_FIELDS:
-            token = "{" + field + "}"
-            if token not in url:
-                continue
-            value = getattr(workflow, field, None)
-            if value in (None, ""):
-                return ""
-            url = url.replace(token, quote(str(value), safe="/"))
-        slug = url.split("?", 1)[0]
-        return url if Page.objects.filter(slug=slug).exists() else ""
+        """The instance-declared page for the workflow — see panels/_workflow.py for the rule."""
+        return workflow_page_url(panel, workflow)
 
     @classmethod
     def _bearing(cls, finding: ZizmorFinding, workflow: GithubWorkflow | None) -> dict[str, Any]:

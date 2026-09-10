@@ -98,6 +98,7 @@ is real.
 | req-zizmor-page-landing | [Page: Landing](#page-landing) | Implemented | `/zizmor` — about, findings table, runs table; every cell drills in |
 | req-zizmor-page-run | [Page: Run](#page-run) | Proposed | `/zizmor/runs/<run_id>` — summary + detail of one run |
 | req-zizmor-page-finding | [Page: Finding](#page-finding) | Implemented | `/zizmor/finding?finding_id=<id>` — one finding in full, joined to its job, action and run |
+| req-zizmor-page-workflow | [Page: Workflow](#page-workflow) | Implemented | `/zizmor/workflow?workflow_id=<n>` — one file, every finding on it: annotated source, then the findings table |
 | req-zizmor-panel-coverage | [Panel: Coverage](#panel-coverage) | Implemented | What the latest run read and what it never did; the panel that stops a findings list reading as safety |
 | req-zizmor-panel-about | [Panel: About](#panel-about) | Implemented | What zizmor is; version observed from the binary; persona; offline posture and skipped audits |
 | req-zizmor-panel-findings-table | [Panel: Findings Table](#panel-findings-table) | Implemented | Latest run's findings with not-observed rows; filter by audit and severity; cells drill in |
@@ -105,6 +106,7 @@ is real.
 | req-zizmor-panel-run-summary | [Panel: Run Summary](#panel-run-summary) | Proposed | One run's version, persona, source collection, coverage, counts, duration |
 | req-zizmor-panel-run-detail | [Panel: Run Detail](#panel-run-detail) | Proposed | Every finding the run produced and every workflow it scanned with outcome |
 | req-zizmor-panel-finding-detail | [Panel: Finding Detail](#panel-finding-detail) | Implemented | One finding in full, linked to its workflow, job and run |
+| req-zizmor-panel-workflow-source | [Panel: Workflow Source](#panel-workflow-source) | Implemented | The whole file with every finding's span marked and a call-out in the right margin, each a link to the finding; the scan verdict frames it |
 | req-zizmor-online-audits | [Online Audits, Aligned To The Graph](#online-audits-aligned-to-the-graph) | Backlog | The four API-backed audits via github_core's auth seam; findings land on `github_action`/`USES_ACTION`; FIPS accounting becomes real |
 | req-zizmor-input-kinds | [Actions, Dependabot And Pre-commit Inputs](#actions-dependabot-and-pre-commit-inputs) | Backlog | Pulled by github_core collecting three more file kinds |
 | req-zizmor-persona | [Persona As A Collector Setting](#persona-as-a-collector-setting) | Backlog | Blocked on the collector-configuration channel (tap#308); until then `auditor` is fixed |
@@ -451,6 +453,34 @@ nothing in it.
 | req-zizmor-page-finding-1 | Resolves The Finding | Implemented | With a valid `finding_id` the detail panel renders that finding; with an unknown id the page says so. | |
 | req-zizmor-page-finding-2 | Links Out | Implemented | The workflow, job (when resolved) and run links resolve to their pages. The workflow link is built from `panel.config.workflow_page_template` (`{full_name}` / `{path}` / `{workflow_id}` placeholders; the instance names the page) and rendered ONLY when that Page exists on the grid — never a dead link. | zizmor-tap#31; the shipped instance template is `/github_core/workflow?workflow_id={workflow_id}` |
 
+### Page: Workflow
+----
+RID: `req-zizmor-page-workflow`
+
+Status: `Implemented`
+
+`/zizmor/workflow?workflow_id=<GitHub numeric workflow id>` — one workflow file and every finding on it
+(George, 2026-09-10: "a consolidated workflow page which shows all the issues associated with a single
+file"). Two slots, top to bottom: `source` mounts `zizmor-workflow-source`
+(`req-zizmor-panel-workflow-source`); `findings` mounts a standard table over the search *zizmor
+Findings on one workflow* — `finding —FLAGS_WORKFLOW→ workflow WHERE workflow_id = $workflow_id`,
+envelope mode, `workflow_id` typed `integer`, no `ORDER BY` (refused on a traversal) — with
+`row_url_template` to the finding. Keyed by `workflow_id` because that is the one value every node
+that reaches a workflow carries (workflow, job, run) and the key github_core's own workflow page takes
+(tap-plugin-github-core#102); not discoverable, since from the menu it has nothing to show.
+
+Reached from: the "see them on the file" link on a finding's page; any consumer's nav rule that
+points a workflow card here; a future Workflow column on the findings table once a finding carries
+its `workflow_id` (zizmor-tap#30). The page links out to the workflow's own page through
+`panel.config.workflow_page_template`, rendered only when that page exists (the finding panel's rule).
+
+#### Acceptance Criteria
+
+| ACID | Title | Status | Description | Notes |
+| --- | --- | :---: | --- | --- |
+| req-zizmor-page-workflow-1 | Two Slots Wired | Implemented | The page mounts the annotated source and the per-workflow findings table; the table's search takes `workflow_id` as its one required integer input and returns nodes. | `tests/test_zizmor_pages.py::test_every_seeded_page_has_all_of_its_slots_wired`, `::test_the_searches_return_a_node_not_a_projection` |
+| req-zizmor-page-workflow-2 | Same Findings Twice, Derived Once | Implemented | The margin call-outs and the table rows are the same set: both read `FLAGS_WORKFLOW` edges to this workflow. | The panel's `_findings` and the search share the edge, not a copy of a list |
+
 ### Panel: About
 ----
 RID: `req-zizmor-panel-about`
@@ -570,6 +600,46 @@ Status: `Proposed`
 | --- | --- | :---: | --- | --- |
 | req-zizmor-panel-run-detail-1 | Scoped To The Run | Proposed | Only findings with a `PRODUCED_FINDING` edge from this run appear; the scanned-workflows list equals the run's `SCANNED_WORKFLOW` edges. |  |
 | req-zizmor-panel-run-detail-2 | Drill-In | Proposed | Finding cells link to finding pages; workflow cells link to github_core pages. |  |
+
+### Panel: Workflow Source
+----
+RID: `req-zizmor-panel-workflow-source`
+
+Status: `Implemented`
+
+`zizmor-workflow-source`: the finding page inverted. The whole collected body (github_core's
+`configuration.raw_yaml`), numbered; each finding's span marked in the tone of its severity; and a
+call-out in the **right margin, level with the span's first line** — numbered like a sidenote, with a
+superscript on the line that carries it — naming the audit and zizmor's summary and linking to that
+finding's page. Findings that start on the same line share one call-out block; a block reserves the
+margin rows down to the next block so two notes never overlap (a dense stretch spreads the source a
+little rather than hiding a note). Below 900px the margin folds under the line.
+
+**Three states, never two.** The latest `SCANNED_WORKFLOW` outcome frames the file: `evaluated` with
+findings ("read this file and left N findings"), `evaluated` with none ("read this file and found
+nothing"), not evaluated (`no-yaml` / `parse-failed`: "could NOT read this file — findings unknown, not
+zero", with the recorded reason), and never considered by any run. A workflow whose body github_core
+never captured says so and lists the findings plainly instead of hanging them on a file that is not
+there.
+
+#### Implementation
+
+`tap_plugin/zizmor/panels/workflow_source/__init__.py` (`annotate()` is the layout: rows, tones, call-out
+blocks with their grid rows), `templates/zizmor/panels/workflow_source.html` (a CSS grid — line number,
+source, margin — with explicit `grid-row`s so a margin note can span rows), `static/zizmor/css/panels.css`
+(`.tap-zizmor-annot*`). Shared with the finding panel through `panels/_workflow.py`: the body's lines,
+the severity tone, and the page-template rule — derived once. Panel config: `workflow_id_var` (default
+`workflow_id`), `workflow_page_template`.
+
+#### Acceptance Criteria
+
+| ACID | Title | Status | Description | Notes |
+| --- | --- | :---: | --- | --- |
+| req-zizmor-panel-workflow-source-1 | Every Finding Marked And Called Out | Implemented | For a workflow with a body and N findings, every span's lines carry a tone and every finding appears in exactly one margin call-out whose link is `/zizmor/finding?finding_id=<its id>`. | `tests/test_zizmor_workflow_source.py` |
+| req-zizmor-panel-workflow-source-2 | Notes Never Overlap | Implemented | Call-out blocks are keyed by starting line; each block's grid rows run to the next block's start, so blocks are disjoint. | same |
+| req-zizmor-panel-workflow-source-3 | Not Read Is Not Clean | Implemented | A workflow whose latest scan outcome is not `evaluated` renders the unknown verdict with the recorded reason; one never scanned renders the never-considered verdict; neither renders as an empty clean file. | same |
+| req-zizmor-panel-workflow-source-4 | No Body, Said So | Implemented | A workflow with findings but no collected body lists the findings and says the file cannot be shown. | same |
+| req-zizmor-panel-workflow-source-5 | Bad Or Missing Id Is Not A 500 | Implemented | A non-numeric or unknown `workflow_id` renders the not-found state; no id renders the how-to-reach-me state. | same |
 
 ### Panel: Finding Detail
 ----
