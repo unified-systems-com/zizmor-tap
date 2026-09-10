@@ -1,3 +1,4 @@
+{% load tap_time %}
 <div class="tap-panel tap-panel--zizmor-finding">
     {% if not panel.config.hide_header %}{% include "tap_web/panel_header.html" %}{% endif %}
 
@@ -23,6 +24,16 @@
             </p>
         </header>
 
+        {% comment %} The subject, before anything else. Which repository and which file this is about
+        used to sit four sections down inside "Where", and visibility and criticality were folded into a
+        bearing list. They are the first questions, so they are the first lines. {% endcomment %}
+        <dl class="tap-zizmor-subject">
+            <div><dt>Repository</dt><dd>{% if workflow %}{{ workflow.full_name }}{% else %}<span class="tap-zizmor-finding__absent">not on the grid</span>{% endif %}</dd></div>
+            <div><dt>Workflow file</dt><dd>{% if workflow_url %}<a href="{{ workflow_url }}"><code>{{ workflow.path|default:location.path }}</code></a>{% else %}<code>{{ workflow.path|default:location.path }}</code>{% endif %}</dd></div>
+            <div><dt>Visibility</dt><dd>{% if bearing.visibility %}{{ bearing.visibility }}{% else %}<span class="tap-zizmor-finding__absent">not observed</span>{% endif %}</dd></div>
+            <div><dt>Criticality</dt><dd>{% if bearing.criticality %}{{ bearing.criticality }}{% else %}<span class="tap-zizmor-finding__absent">not declared</span>{% endif %}</dd></div>
+        </dl>
+
         {# What to change, second — this is a security finding and the fix is the point of the page. #}
         <section class="tap-zizmor-finding__section tap-zizmor-finding__section--do">
             <h4>What to change</h4>
@@ -40,11 +51,10 @@
                 means it may not. Neither is applied automatically — TAP records what the scanner offers, it does not
                 rewrite your workflows.
             </p>
+            {% if finding.audit_url %}<p><a class="tap-zizmor-doclink" href="{{ finding.audit_url }}" target="_blank" rel="noopener noreferrer">Read the {{ finding.audit_id }} rule ↗</a></p>{% endif %}
             {% elif finding.audit_url %}
-            <p class="tap-zizmor-finding__meaning">
-                zizmor offers no machine-applicable fix for this one. Its rule page explains the change to make:
-                <a href="{{ finding.audit_url }}" target="_blank" rel="noopener noreferrer">{{ finding.audit_id }}</a>.
-            </p>
+            <p class="tap-zizmor-finding__meaning">zizmor offers no machine-applicable fix for this one — its rule page explains the change to make.</p>
+            <p><a class="tap-zizmor-doclink" href="{{ finding.audit_url }}" target="_blank" rel="noopener noreferrer">Read the {{ finding.audit_id }} rule ↗</a></p>
             {% else %}
             <p class="tap-zizmor-finding__absent">
                 zizmor offers no machine-applicable fix for this one, and this build carries no rule link for it.
@@ -70,10 +80,6 @@
                         {% elif bearing.runs == 0 %}<strong>none in the collected window</strong> <span class="tap-zizmor-finding__absent">— which is not the same as never</span>
                         {% else %}{{ bearing.runs }} in the collected window{% endif %}
                     </span>
-                </li>
-                <li>
-                    <span class="tap-zizmor-bearing__k">Repository</span>
-                    <span class="tap-zizmor-bearing__v">{% if bearing.visibility %}{{ bearing.visibility }}{% if bearing.criticality %}, criticality {{ bearing.criticality }}{% endif %}{% else %}<span class="tap-zizmor-finding__absent">not on the grid</span>{% endif %}</span>
                 </li>
                 <li>
                     <span class="tap-zizmor-bearing__k">This rule</span>
@@ -113,8 +119,31 @@
                 <code class="tap-zizmor-finding__fragment">{{ location.subfeature }}</code>
             </p>
             {% endif %}
-            {% if location.feature %}
-            <pre class="tap-zizmor-finding__code"><code>{{ location.feature }}</code></pre>
+            {% if source.lines %}
+            <p class="tap-zizmor-src__cap">
+                {% if source.whole %}The whole file, with the flagged lines marked.
+                {% else %}zizmor's excerpt — github_core has no collected body for this workflow, so the surrounding file cannot be shown.{% endif %}
+            </p>
+            <div class="tap-zizmor-src">
+                <table class="tap-zizmor-src__t">
+                    <tbody>
+                        {% for line in source.lines %}
+                        <tr class="tap-zizmor-src__l{% if line.hit %} tap-zizmor-src__l--hit{% endif %}"{% if line.hit %} data-hit="1"{% endif %}>
+                            <td class="tap-zizmor-src__n">{{ line.n }}</td>
+                            <td class="tap-zizmor-src__c"><code>{{ line.text }}</code></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <script>
+            (function () {
+                document.querySelectorAll(".tap-zizmor-src").forEach(function (box) {
+                    var hit = box.querySelector("[data-hit]");
+                    if (hit) { box.scrollTop = Math.max(0, hit.offsetTop - box.clientHeight / 3); }
+                });
+            })();
+            </script>
             {% endif %}
         </section>
 
@@ -161,8 +190,8 @@
             <summary>Provenance — scanner, and how long this has been here</summary>
             <dl class="tap-zizmor-finding__facts">
                 <div><dt>Scanner</dt><dd>zizmor {{ finding.scanner_version }}</dd></div>
-                <div><dt>First seen</dt><dd>{{ finding.known_since|default:"—" }}</dd></div>
-                <div><dt>Last seen</dt><dd>{{ finding.observed_at|default:"—" }}</dd></div>
+                <div><dt>First seen</dt><dd>{% if finding.known_since %}{{ finding.known_since|tap_localtime }}{% else %}—{% endif %}</dd></div>
+                <div><dt>Last seen</dt><dd>{% if finding.observed_at %}{{ finding.observed_at|tap_localtime }}{% else %}—{% endif %}</dd></div>
                 <div>
                     <dt>Produced by</dt>
                     <dd>{% if run %}{{ run.get_name }}{% else %}<span class="tap-zizmor-finding__absent">No run on this grid claims this finding.</span>{% endif %}</dd>

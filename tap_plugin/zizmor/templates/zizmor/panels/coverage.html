@@ -8,30 +8,46 @@
             {% if unobserved_total %}<strong class="tap-zizmor-coverage__alarm">{{ unobserved_total }}</strong>
             of them were never scanned.{% else %}all of them were scanned.{% endif %}
         </p>
-        <div class="tap-zizmor-coverage__groups">
+        <ul class="tap-zizmor-cov-legend">
             {% for group in groups %}
-            <section class="tap-zizmor-coverage__group tap-zizmor-coverage__group--{{ group.tone }}">
-                <h4>
-                    <span class="tap-zizmor-coverage__count">{{ group.count }}</span>
-                    {{ group.label }}
-                </h4>
-                <p class="tap-zizmor-coverage__meaning">{{ group.meaning }}</p>
-                {% if group.named %}
-                <ul class="tap-zizmor-coverage__list">
-                    {% for row in group.named %}
-                    <li>
-                        <code>{{ row.workflow }}</code>
-                        {% if row.reason %}<span class="tap-zizmor-coverage__reason">{{ row.reason }}</span>{% endif %}
-                    </li>
-                    {% endfor %}
-                </ul>
-                {% if group.remainder %}
-                <p class="tap-zizmor-coverage__more">and {{ group.remainder }} more</p>
-                {% endif %}
-                {% endif %}
-            </section>
+            <li class="tap-zizmor-cov-legend__item tap-zizmor-cov-legend__item--{{ group.tone }}">
+                <span class="tap-zizmor-cov-legend__n">{{ group.count }}</span>
+                <span class="tap-zizmor-cov-legend__l">{{ group.label }}{% if group.shared_reason %}<span class="tap-zizmor-cov-legend__why">{{ group.shared_reason }}</span>{% endif %}</span>
+            </li>
             {% endfor %}
+        </ul>
+
+        <div class="tap-zizmor-cov-scroll">
+            <table class="tap-zizmor-cov">
+                <thead>
+                    <tr><th>Workflow</th><th>Outcome</th><th>Why</th></tr>
+                </thead>
+                <tbody>
+                    {% for row in rows %}
+                    <tr class="tap-zizmor-cov__r tap-zizmor-cov__r--{{ row.tone }}">
+                        <td class="tap-zizmor-cov__wf" title="{{ row.workflow }}"><code>{{ row.workflow }}</code></td>
+                        <td class="tap-zizmor-cov__out">{{ row.label }}</td>
+                        <td class="tap-zizmor-cov__why">{{ row.reason|default:"" }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
         </div>
+
+        {% if skipped %}
+        <section class="tap-zizmor-cov-audits">
+            <h4>{{ skipped|length }} audit{{ skipped|length|pluralize }} did not run</h4>
+            <p class="tap-zizmor-coverage__meaning">
+                These need a GitHub API token, so this offline run could not perform them. Their findings are
+                <strong>unknown</strong> for every workflow above — not zero.
+            </p>
+            <ul class="tap-zizmor-cov-audits__list">
+                {% for audit in skipped %}
+                <li><code>{{ audit.audit_id }}</code> <span>{{ audit.reason }}</span></li>
+                {% endfor %}
+            </ul>
+        </section>
+        {% endif %}
         {% if unreached %}
         <p class="tap-zizmor-coverage__unreached">
             <strong>{{ unreached }}</strong> workflow{{ unreached|pluralize }} on this grid carry no

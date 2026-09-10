@@ -137,12 +137,45 @@ class ZizmorFindingDetailPanelType:
             # What the grid knows that the scanner cannot — see _bearing().
             "bearing": cls._bearing(finding, cls._workflow(finding)),
             "workflow_url": cls._workflow_url(panel, cls._workflow(finding)),
+            "source": cls._source(location, cls._workflow(finding)),
         }
 
     # ------------------------------------------------------------------
     # Joins. Each returns None when the endpoint is genuinely absent; the caller renders the
     # recorded reason rather than a blank.
     # ------------------------------------------------------------------
+
+    @staticmethod
+    def _source(location: dict[str, Any], workflow: GithubWorkflow | None) -> dict[str, Any]:
+        """The whole workflow file with the flagged span marked, or the excerpt when that is all we have.
+
+        The panel used to render `location.feature` — zizmor's excerpt, which for a workflow-level
+        finding is the file and for a step-level one is a handful of lines with no surrounding
+        context. github_core already stores the workflow body, so show the document and mark the
+        span instead of making the reader imagine what is around it. Three states, not two: a
+        workflow with no collected body says so rather than rendering an empty box.
+        """
+        start = location.get("row") or 0
+        end = location.get("end_row") or start
+        body = ((getattr(workflow, "configuration", None) or {}).get("raw_yaml") or "") if workflow else ""
+        if body:
+            return {
+                "lines": [
+                    {"n": i, "text": text, "hit": bool(start) and start <= i <= end}
+                    for i, text in enumerate(body.splitlines(), start=1)
+                ],
+                "whole": True,
+                "first_hit": start or None,
+            }
+        excerpt = location.get("feature") or ""
+        if not excerpt:
+            return {"lines": [], "whole": False, "first_hit": None}
+        # The excerpt's own first line IS `row`, so number from there rather than from 1.
+        return {
+            "lines": [{"n": start + i, "text": t, "hit": True} for i, t in enumerate(excerpt.splitlines())],
+            "whole": False,
+            "first_hit": start or None,
+        }
 
     @classmethod
     def _workflow_url(cls, panel: Panel, workflow: GithubWorkflow | None) -> str:

@@ -171,15 +171,30 @@ def test_about_reads_the_run_rather_than_asking_the_binary(db: None) -> None:
     assert ctx["audits_ran"] == 36
 
 
-def test_about_names_why_each_skipped_audit_could_not_run(db: None) -> None:
-    """ "36 audits ran" alone invites the reading that the other five found nothing."""
+def test_coverage_names_why_each_skipped_audit_could_not_run(db: None) -> None:
+    """ "36 audits ran" alone invites the reading that the other five found nothing.
+
+    Moved from the about panel: an audit that could not run and a workflow that was never read
+    are the same claim — findings unknown, not zero — so coverage argues both.
+    """
     _run()
 
-    skipped = {s["audit_id"]: s["reason"] for s in ZizmorAboutPanelType.get_view_context(_FakePanel(), None)["skipped"]}
+    ctx = ZizmorCoveragePanelType.get_view_context(_FakePanel(), None)
+    skipped = {s["audit_id"]: s["reason"] for s in ctx["skipped"]}
 
     assert skipped["impostor-commit"] == "can't run without a GitHub API token"
     # No recorded reason must still say something, not render blank.
     assert skipped["ref-confusion"]
+
+
+def test_about_points_at_coverage_rather_than_repeating_it(db: None) -> None:
+    """About counts the audits that did not run; coverage says which and why."""
+    _run()
+
+    ctx = ZizmorAboutPanelType.get_view_context(_FakePanel(), None)
+
+    assert ctx["skipped_count"] >= 1
+    assert "skipped" not in ctx  # the list lives in one place, not two
 
 
 def test_about_on_a_grid_with_no_run_says_so(db: None) -> None:
@@ -187,7 +202,7 @@ def test_about_on_a_grid_with_no_run_says_so(db: None) -> None:
     ctx = ZizmorAboutPanelType.get_view_context(_FakePanel(), None)
 
     assert ctx["run"] is None
-    assert ctx["skipped"] == []
+    assert ctx["skipped_count"] == 0
 
 
 # ---------------------------------------------------------------------------

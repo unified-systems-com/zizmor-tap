@@ -75,7 +75,7 @@ class ZizmorCoveragePanelType:
     def get_view_context(cls, panel: Panel, request: HttpRequest) -> dict[str, Any]:
         run = ZizmorRun.objects.order_by("-started_at").first()
         if run is None:
-            return {"run": None, "groups": [], "total": 0, "unobserved_total": 0}
+            return {"run": None, "groups": [], "rows": [], "skipped": [], "total": 0, "unobserved_total": 0}
 
         max_named = int((panel.config or {}).get("max_named", 8))
         edges = list(Edge.objects.filter(from_entity_id=run.entity_id, edge_type=SCANNED_WORKFLOW))
@@ -93,26 +93,55 @@ class ZizmorCoveragePanelType:
                 }
             )
 
+        # One flat row per workflow — the grouped lists could only ever show the first
+        # `max_named` of each bucket and then said "and 32 more", which is the shape of a
+        # summary pretending to be an inventory. A table shows all of them.
+        rows = []
+        shared: dict[str, str] = {}
+        for key, meta in OUTCOME_META.items():
+            bucket = sorted(buckets.get(key, []), key=lambda x: x["workflow"])
+            # A reason identical on every row of a bucket is a property of the OUTCOME, not of the
+            # workflow. Printed per row it filled the widest column with the same sentence forty
+            # times and said nothing; hoisted to the group it is said once and read once.
+            distinct = {r["reason"] for r in bucket if r["reason"]}
+            if len(distinct) == 1 and len(bucket) > 1:
+                shared[key] = distinct.pop()
+            for r in bucket:
+                reason = "" if key in shared else r["reason"]
+                rows.append({**r, "reason": reason, "outcome": key, "label": meta["label"], "tone": meta["tone"]})
+
         groups = []
         for key, meta in OUTCOME_META.items():
-            rows = sorted(buckets.get(key, []), key=lambda r: r["workflow"])
-            if not rows:
+            bucket_rows = sorted(buckets.get(key, []), key=lambda r: r["workflow"])
+            if not bucket_rows:
                 continue
             groups.append(
                 {
                     "outcome": key,
-                    "count": len(rows),
-                    "named": rows[:max_named] if key != "evaluated" else [],
-                    "remainder": max(0, len(rows) - max_named) if key != "evaluated" else 0,
+                    "count": len(bucket_rows),
+                    "shared_reason": shared.get(key, ""),
+                    "named": bucket_rows[:max_named] if key != "evaluated" else [],
+                    "remainder": max(0, len(bucket_rows) - max_named) if key != "evaluated" else 0,
                     **meta,
                 }
             )
+
+        # The audits that could not run. Moved here from the about panel: an audit that could not
+        # run and a workflow that was never read are the same claim — findings unknown, not zero —
+        # and they belong in one place. `tags.skipped_audit_reasons` carries the binary's own words;
+        # fall back to the bare list when an older run predates the tag.
+        reasons: dict[str, str] = (run.tags or {}).get("skipped_audit_reasons") or {}
+        skipped = [
+            {"audit_id": a, "reason": reasons.get(a, "not available offline")} for a in sorted(run.skipped_audits or [])
+        ]
 
         total = len(by_target)
         unobserved = total - len(buckets.get("evaluated", []))
         return {
             "run": run,
             "groups": groups,
+            "rows": rows,
+            "skipped": skipped,
             "total": total,
             "unobserved_total": unobserved,
             # The workflows on the grid that this run has no edge to at all. Distinct from every
