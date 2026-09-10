@@ -90,7 +90,7 @@ is real.
 | RID | Name | Status | Notes |
 | --- | --- | :---: | --- |
 | req-zizmor-binary | [The Pinned Binary](#the-pinned-binary) | Proposed | Exact PyPI pin; honest `[fips]` declaration; SBOM/alert channels named with their gaps |
-| req-zizmor-collector | [Offline Derived Collector](#offline-derived-collector) | Proposed | Materialize `raw_yaml` per repo → `zizmor --offline --format json-v1` → GRIFT batch |
+| req-zizmor-collector | [Offline Derived Collector](#offline-derived-collector) | Implemented | Materialize `raw_yaml` per repo → `zizmor --offline --format json-v1` → GRIFT batch |
 | req-zizmor-trigger | [Own Schedule, With A Staleness Guard](#own-schedule-with-a-staleness-guard) | Proposed | Seeded `schedule` node + boot-record first light; a run names the github_core collection it read and skips while one is active |
 | req-zizmor-record | [A Corpus-Fed Boot Record That Fires](#a-corpus-fed-boot-record-that-fires) | Proposed | In-package record seeds a corpus bundle of known-bad workflows and fires the collector offline; expected audit IDs derive from zizmor's own test corpus; the suite runs the same population in the boot-and-test leg |
 | req-zizmor-finding | [The Finding Node](#the-finding-node) | In Development | `zizmor__finding` with provenance fields; edges to run, workflow and job. A compliance-level node in disguise — see the implementation note |
@@ -157,7 +157,7 @@ image (core carrying a product's dependency, 27 MB in every instance that never 
 | ACID | Title | Status | Description | Notes |
 | --- | --- | :---: | --- | --- |
 | req-zizmor-binary-1 | Exact Pin | Proposed | `pyproject.toml` pins `zizmor==X.Y.Z`; `uv.lock` resolves it; `validate_plugin --strict` passes with the honest `[fips]` declaration. | |
-| req-zizmor-binary-2 | Version Stamped | Proposed | Every run and finding carries the binary's reported version (`zizmor --version`), which equals the pinned version, else the collector aborts before scanning. | The binary that ran is the one that was pinned. |
+| req-zizmor-binary-2 | Version Stamped | Implemented | Every run and finding carries the binary's reported version (`zizmor --version`), which equals the pinned version, else the collector aborts before scanning. | The binary that ran is the one that was pinned. |
 | req-zizmor-binary-3 | SBOM Presence | Proposed | The plugin's release SBOM lists `pkg:pypi/zizmor@X.Y.Z` and carries the embedded crate-level document as a nested component. | |
 | req-zizmor-binary-4 | Alert Channel Proven | Proposed | A Dependabot alert or Renovate PR fires for a zizmor advisory or release on the plugin repo — demonstrated once with a real bump, not assumed from configuration. | The Renovate half is tap#303. |
 
@@ -176,14 +176,49 @@ duration of one subprocess call and is removed on exit. The persona is fixed at 
 network and declares no `required_secrets`. Manifest `depends_on` names `github_core` (Tier 1: it imports
 github_core's models to resolve workflow and job endpoints).
 
+#### Implementation
+
+Three things the design had to settle once the binary was read rather than assumed
+(*observed* 2026-09-10, zizmor 1.30.0, first light against the 24-repository org collection:
+155 findings from 77 evaluated workflows, 40 `no-yaml`, 0 parse-failed, 0 refused).
+
+**One invocation per workflow file, not one per repository.** A scan costs ~41 ms, so 77 workflows
+cost about three seconds — cheap enough to buy exact attribution. A single invocation over the
+whole tree would leave `parse-failed` un-attributable to a file, and the per-workflow
+`SCANNED_WORKFLOW` outcome is the entire basis for "unevaluated is not clean". `--no-exit-codes`
+is passed deliberately: without it the exit status encodes the highest finding severity, so
+"found something" and "could not run" become the same signal.
+
+**The audit set is derived, not authored.** zizmor publishes no audit inventory — not through a
+flag, and not through SARIF, whose `rules` array carries only the audits that FIRED (7 rules for 7
+fired audits, against 36 actually scheduled). An authored list would be a second copy of somebody
+else's vocabulary, wrong one release later and wrong in the reassuring direction. The binary does
+say it at `-vv`: one `scheduling <audit>` line per audit run, one `skipping <audit>: <reason>` per
+audit refused offline. The collector parses those, and fails CLOSED — an unparseable log yields an
+empty audit set, which `ZizmorRun.validate()` refuses on a completed run. The exact-version pin
+bounds the brittleness: the format can only move under a bump, and a bump re-runs the tests.
+
+**A finding is keyed on its assertion, including the fragment.** Keying on the run would mint a
+fresh node every six hours for a defect nobody touched; keying on row and column would report a
+whole file as newly-defective after a reformat. The key is (workflow, audit, symbolic route,
+persona, narrowed fragment) — the fragment is load-bearing, because four `template-injection`
+findings on one step share audit, route and persona, and two of them share a row and column as
+well. Where the same expression genuinely repeats in one block, an occurrence suffix separates
+them; that is recorded at info, and its cost is named: editing that block re-identifies the later
+occurrences within it.
+
+A job-level `uses:` pointing into a repository's `.github/workflows/` is a reusable WORKFLOW call,
+not an action, and github_core correctly mints no `github_action` node for one. It is classified
+as such rather than reported as an action that could not be found.
+
 #### Acceptance Criteria
 
 | ACID | Title | Status | Description | Notes |
 | --- | --- | :---: | --- | --- |
 | req-zizmor-collector-1 | Pure Function Of Grid State | Proposed | Two runs over unchanged workflow rows with the same pinned binary produce identical finding sets; no network access is attempted (asserted with egress blocked in the test). | |
-| req-zizmor-collector-2 | Our Org, First Light | Proposed | Against the viz session's collected org (75 workflows, *observed*), the collector completes and lands findings whose audit IDs appear in zizmor's documented audit list. | The gate for every Backlog requirement. |
-| req-zizmor-collector-3 | Scratch Is Ephemeral And Isolated | Proposed | The scratch tree is per run under the scratch root; two concurrent runs never share a path; after a run (or a failed run) no materialized file remains. | |
-| req-zizmor-collector-4 | Paths Sanitized | Proposed | A workflow row whose `path` is absolute, contains `..`, or escapes its repository's scratch directory is skipped and recorded as `skipped` with the reason, and nothing is written outside the scratch tree. | Path traversal is not a hypothetical: `path` comes from collected data. |
+| req-zizmor-collector-2 | Our Org, First Light | Implemented | Against the viz session's collected org (75 workflows, *observed*), the collector completes and lands findings whose audit IDs appear in zizmor's documented audit list. | The gate for every Backlog requirement. |
+| req-zizmor-collector-3 | Scratch Is Ephemeral And Isolated | Implemented | The scratch tree is per run under the scratch root; two concurrent runs never share a path; after a run (or a failed run) no materialized file remains. | |
+| req-zizmor-collector-4 | Paths Sanitized | Implemented | A workflow row whose `path` is absolute, contains `..`, or escapes its repository's scratch directory is skipped and recorded as `skipped` with the reason, and nothing is written outside the scratch tree. | Path traversal is not a hypothetical: `path` comes from collected data. |
 
 ### Own Schedule, With A Staleness Guard
 ----
@@ -299,8 +334,8 @@ never a shape derived from the absence of a finding.
 
 | ACID | Title | Status | Description | Notes |
 | --- | --- | :---: | --- | --- |
-| req-zizmor-finding-1 | Provenance Complete | Proposed | Every landed finding has non-empty `audit_id`, `severity`, `confidence`, `scanner_version` and `observed_at`, an edge from its run, and an edge to exactly one workflow. | |
-| req-zizmor-finding-2 | Job Resolution Honest | Proposed | A finding whose location names a job that exists on the grid gets `FLAGS_JOB`; one whose job cannot be resolved gets no job edge and records why in `tags`. | |
+| req-zizmor-finding-1 | Provenance Complete | Implemented | Every landed finding has non-empty `audit_id`, `severity`, `confidence`, `scanner_version` and `observed_at`, an edge from its run, and an edge to exactly one workflow. | |
+| req-zizmor-finding-2 | Job Resolution Honest | Implemented | A finding whose location names a job that exists on the grid gets `FLAGS_JOB`; one whose job cannot be resolved gets no job edge and records why in `tags`. | |
 | req-zizmor-finding-3 | Neutral Shape Recorded | Proposed | The model docstring and domain article carry the compliance-node note and name the two Backlog requirements that will force the design. | |
 
 ### Runs Are First-Class
@@ -322,7 +357,7 @@ every consumer. The four online-only audits are recorded as `skipped` on every v
 | ACID | Title | Status | Description | Notes |
 | --- | --- | :---: | --- | --- |
 | req-zizmor-run-1 | Not Scanned Is Visible | Proposed | Remove one workflow's `SCANNED_WORKFLOW` edge from the current run; the findings table shows it as *not observed by this scanner*, not as clean. | The three-states rule, mechanized. |
-| req-zizmor-run-2 | Counts Match | Proposed | A run's recorded finding counts equal the findings reachable from it by `PRODUCED_FINDING`; a mismatch fails the collector's own post-check. | Presence is not correctness. |
+| req-zizmor-run-2 | Counts Match | Implemented | A run's recorded finding counts equal the findings reachable from it by `PRODUCED_FINDING`; a mismatch fails the collector's own post-check. | Presence is not correctness. |
 
 ### Page: Landing
 ----
@@ -383,7 +418,7 @@ RID: `req-zizmor-panel-about`
 
 Status: `Proposed`
 
-`zizmor_about` (info-window panel type): what zizmor is and does, the audit families it covers, the scanner version and persona **as recorded on the latest run node** (the collector reads the binary once at run start and records it; the panel never invokes the binary), the offline posture and the four audits it therefore skips, and links to zizmor's audit documentation. Every fact on it is read from the grid (the latest `zizmor__run`) or the binary — nothing is typed into the panel.
+`zizmor_about` (info-window panel type): what zizmor is and does, the audit families it covers, the scanner version and persona **as recorded on the latest run node** (the collector reads the binary once at run start and records it; the panel never invokes the binary), the offline posture and the five audits it therefore skips (read from the run node, which derives them from the binary), and links to zizmor's audit documentation. Every fact on it is read from the grid (the latest `zizmor__run`) or the binary — nothing is typed into the panel.
 
 #### Acceptance Criteria
 
@@ -474,9 +509,13 @@ RID: `req-zizmor-online-audits`
 
 Status: `Backlog`
 
-The four audits zizmor cannot run offline — `impostor-commit`, `known-vulnerable-actions`,
-`ref-confusion`, `typosquat-uses` (the prior-art survey also flagged `archived-uses`; verify on first
-run) — run with a token through **github_core's auth seam, never a second envelope**. Their findings
+The **five** audits zizmor cannot run offline — *observed* 2026-09-10 by reading the binary's own
+`-vv` registry diagnostics on 1.30.0, which name each one and why: `impostor-commit`,
+`ref-confusion`, `known-vulnerable-actions`, `stale-action-refs` and `ref-version-mismatch`, each
+"can't run without a GitHub API token". This corrects the prior-art survey's guess of four: it
+named `typosquat-uses` and `archived-uses`, and BOTH of those in fact run offline (they are among
+the 36 audits the binary schedules). The collector derives this set per run rather than carrying a
+copy of it. They run with a token through **github_core's auth seam, never a second envelope**. Their findings
 are about action references, so they must land on nodes and edges that exist on the grid by then:
 `github_action` and `USES_ACTION` carrying `pin_kind`, `pinned_sha`, `declared_ref`,
 `resolves_to_fork` — an impostor-commit finding points at the exact reference whose SHA does not
@@ -595,7 +634,8 @@ sibling plugin or a scanner dimension on this one is decided when the second sca
 | `SCANNED_WORKFLOW__zizmor` | run → `github_workflow` | `{outcome: evaluated \| parse-failed \| skipped \| no-yaml, reason}` | Coverage; the absence of this edge is the not-observed state. `reason` is required for every outcome except `evaluated`. |
 | `FLAGS_WORKFLOW__zizmor` | finding → `github_workflow` | — | Every finding locates a workflow file. |
 | `FLAGS_JOB__zizmor` | finding → `workflow_job` | — | When the location names a declared job; the conjunction join. |
-| `FLAGS_ACTION__zizmor` | finding → `github_action` | `{uses}` | When the finding is about a `uses:` reference. The action node is keyed with the ref stripped, so the reference rides the edge; the pin's MEANING stays github_core's `USES_ACTION` fact. |
+| `FLAGS_ACTION__zizmor` | finding → `github_action` | `{uses}` | When the finding is about a `uses:` reference. The action node is keyed with the ref stripped, so the reference rides the edge; the pin's MEANING stays github_core's `USES_ACTION` fact. **Unexercised on real data so far:** the 2026-09-10 first light produced 3 such edges, all from the `github-app` audit and NONE from the nine `uses:` audits the edge was built for — the org SHA-pins its third-party actions, so those audits mostly do not fire, and the 14 `unpinned-uses` findings that did fire all name reusable-WORKFLOW calls, which have no action node (see below). The justification stands for a grid carrying unpinned third-party actions; it should not be described as proven until a collection produces a non-zero count from those audits. |
+| `FLAGS_CALLED_WORKFLOW__zizmor` | *(not built)* | — | **Gap, zizmor-tap#19.** A job-level `uses:` into a repository's `.github/workflows/` is a reusable WORKFLOW call, not an action, and github_core models that relationship as `CALLS_WORKFLOW` between workflows. A finding about an unpinned mutable reference to code that runs with our token therefore attaches today only to the file it was written in. Reusing `FLAGS_WORKFLOW` toward the called workflow is wrong: a finding would carry two, with no way to tell "the file I am in" from "the file I reference", and `req-zizmor-finding-1` requires exactly one. |
 
 **Slugs.** `PRODUCED` and `SCANNED` were the names through 2026-09-02; both are bare verbs and fail
 core's edge-naming guard (`<ACTION>_<OBJECT>`, `tap_plugins/validate/service.py` `_edge_naming_violations`,
