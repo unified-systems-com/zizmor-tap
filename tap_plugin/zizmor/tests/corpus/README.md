@@ -20,6 +20,15 @@ findings for every input would still pass every other assertion here.
 `bad-yaml.yml` is `invalid/bad-yaml-2.yml` upstream — the unparseable input, so `parse-failed` is
 exercised against a file zizmor itself considers broken.
 
+## Provenance is checkable, not asserted
+
+`provenance.json` beside this file records each vendored file's **upstream git blob SHA** at
+`v1.30.0`. `git hash-object <file>` recomputes it offline, and the same value can be looked up on
+github.com — so byte-identity with upstream does not rest on trusting this README.
+`test_the_vendored_corpus_is_byte_identical_to_upstream` asserts it on every run, which also catches
+the quiet failure mode: a corpus file edited locally to make a test pass would turn the oracle into
+a mirror of our own expectations.
+
 ## Updating
 
 These move only when the `zizmor==` pin moves, and re-vendoring is a deliberate act that rides its

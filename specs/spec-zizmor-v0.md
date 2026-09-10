@@ -271,8 +271,17 @@ indistinguishable from one github_core actually observed; wanting a "this row is
 dimension to make that safe was the signal that the data belonged in a test, not in the product.
 Second, it would not have proven anything anyway: plugin CI's boot-and-test leg does not run
 population (`manage.py boot` runs at spawn time only), so the *test* was always doing the work and
-the bundle was riding along. Fixture data does not ship in the wheel and is not seeded from a boot
-record.
+the bundle was riding along.
+
+The corpus **does** ship in the wheel, as test data — *verified* 2026-09-10 by building the wheel
+and listing it: all 15 files plus the licence and the test that reads them. That is deliberate and
+follows the estate convention that a plugin's tests ride in its wheel, so an installed plugin can
+prove itself (`pytest --pyargs tap_plugin.zizmor`) and an agent has the corpus to reason from. What
+fixture data never does is **seed a live grid**: it is not a GRIFT bundle, no boot record imports
+it, and nothing puts a synthetic node on the spine where it would be indistinguishable from an
+observed one. (An earlier draft of this section claimed the corpus "does not ship in the wheel",
+which was simply false — the distinction that matters is shipped-as-test-data versus
+seeded-as-product-data.)
 
 This does not withdraw the in-package `ci` boot record, which exists for a different reason
 (`req-boot-bootstrap-ci-record`) and seeds nothing.
@@ -286,6 +295,8 @@ This does not withdraw the in-package `ci` boot record, which exists for a diffe
 | req-zizmor-record-3 | The States Stay Apart | Implemented | The unparseable entry is `parse-failed` with a reason, the YAML-less row is `no-yaml` with a reason, and every seeded workflow carries exactly one coverage edge. | The three-states rule, mechanized. |
 | req-zizmor-record-4 | Runs In CI | Implemented | The suite runs offline, with no credential and no network, in plugin CI's boot-and-test leg. | |
 | req-zizmor-record-5 | Re-vendoring Is Deliberate | Proposed | The corpus moves only when the `zizmor==` pin moves, and re-vendoring rides its own PR — never a build step. | A corpus that regenerated itself would silently adopt whatever upstream changed, which is the drift it exists to detect. |
+| req-zizmor-record-6 | No Unexpected Findings Either | Implemented | The COMPLETE audit set per corpus file is recorded and asserted, so an extra or misattributed finding fails as loudly as a missing one. | Restores the "no missing, no extra" strength of the withdrawn criterion, which the first draft of this test silently dropped to "the named audit fired". |
+| req-zizmor-record-7 | Provenance Is Checkable | Implemented | `tests/corpus/provenance.json` records each file's upstream git blob SHA at the pinned tag, and a test recomputes it offline. | Byte-identity with upstream becomes a fact a reader can re-derive against github.com, not a claim in a README — and a corpus file edited locally to make a test pass is caught. |
 
 **Settled on first build:** nothing forbids a plugin seeding another plugin's node type — a
 `github_core__github_workflow` written by zizmor imports cleanly through the registry-resolved

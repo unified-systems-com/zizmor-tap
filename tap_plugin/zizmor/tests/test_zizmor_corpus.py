@@ -30,6 +30,8 @@ with the next run's ids. Three coarse tests keep the harness's guarantees and pa
 
 from __future__ import annotations
 
+import hashlib
+import json
 import uuid
 from pathlib import Path
 from typing import Any
@@ -76,6 +78,33 @@ EXPECTED_AUDIT_BY_FILE: dict[str, str] = {
     "bot-conditions.yml": "bot-conditions",
     "github-app.yml": "github-app",
     "use-trusted-publishing.yml": "use-trusted-publishing",
+}
+
+#: The COMPLETE audit set each corpus file produces at `auditor` persona, *observed* against
+#: zizmor 1.30.0 on 2026-09-10 and recorded so that an EXTRA or MISATTRIBUTED finding fails as
+#: loudly as a missing one. The two assertions do different jobs and neither replaces the other:
+#: `EXPECTED_AUDIT_BY_FILE` is upstream's own claim about each file and cannot drift with our
+#: output, while this snapshot is our tripwire — it IS our own output recorded, so it proves
+#: nothing on its own, but it turns any change in what the scanner says into a review rather
+#: than a silent difference. It moves only when the pin moves.
+FULL_AUDIT_SET_BY_FILE: dict[str, frozenset[str]] = {
+    "anonymous-definition.yml": frozenset({"anonymous-definition"}),
+    "artipacked.yml": frozenset({"artipacked"}),
+    "bot-conditions.yml": frozenset({"bot-conditions", "concurrency-limits", "dangerous-triggers"}),
+    "cache-poisoning.yml": frozenset({"cache-poisoning", "concurrency-limits", "secrets-outside-env"}),
+    "excessive-permissions.yml": frozenset({"concurrency-limits", "excessive-permissions"}),
+    "github-app.yml": frozenset({"github-app"}),
+    "insecure-commands.yml": frozenset({"insecure-commands"}),
+    "obfuscation.yml": frozenset({"concurrency-limits", "obfuscation", "template-injection"}),
+    "secrets-inherit.yml": frozenset({"secrets-inherit", "unpinned-uses"}),
+    "self-hosted.yml": frozenset({"self-hosted-runner"}),
+    "template-injection.yml": frozenset({"concurrency-limits", "template-injection"}),
+    "unpinned-uses.yml": frozenset({"unpinned-uses"}),
+    "use-trusted-publishing.yml": frozenset(
+        {"concurrency-limits", "excessive-permissions", "undocumented-permissions", "use-trusted-publishing"}
+    ),
+    # Upstream's known-good workflow: the scanner examines it and finds nothing.
+    "neutral.yml": frozenset(),
 }
 
 CLEAN_FILE = "neutral.yml"
@@ -260,3 +289,54 @@ def test_the_run_accounts_for_everything_it_produced(collected: Collected) -> No
         collected.run.audit_set
     )
     assert not outside, f"findings name audits the run did not report running: {sorted(outside)}"
+
+
+def test_no_corpus_workflow_produces_an_unexpected_audit(collected: Collected) -> None:
+    """Extra and misattributed findings must fail as loudly as missing ones.
+
+    The named-audit test above proves nothing was LOST. This proves nothing appeared that we have
+    not looked at: a scanner upgrade that starts flagging a corpus file differently is a change we
+    should read before adopting, not one that slips through because the audit we happened to name
+    still fires.
+    """
+    drift = {
+        filename: {
+            "unexpected": sorted({f.audit_id for f in collected.findings_for(filename)} - expected),
+            "absent": sorted(expected - {f.audit_id for f in collected.findings_for(filename)}),
+        }
+        for filename, expected in FULL_AUDIT_SET_BY_FILE.items()
+        if {f.audit_id for f in collected.findings_for(filename)} != expected
+    }
+
+    assert not drift, (
+        "the scanner's output for these corpus files no longer matches the recorded set. If this "
+        f"followed a zizmor version bump, review the change and re-record it: {drift}"
+    )
+
+
+def test_the_vendored_corpus_is_byte_identical_to_upstream() -> None:
+    """The corpus matches zizmor v1.30.0 exactly, checkable offline.
+
+    `provenance.json` records each file's GIT BLOB SHA as GitHub served it at the pinned tag. That
+    is the same value `git hash-object` computes locally and the same value a reader can look up on
+    github.com, so "vendored verbatim" stops being a claim in a README and becomes a fact anyone can
+    re-derive without trusting this repository.
+
+    It also catches the quiet failure: a corpus file edited locally to make a test pass would turn
+    the oracle into a mirror of our own expectations.
+    """
+    manifest = json.loads((CORPUS_DIR.parent / "provenance.json").read_text(encoding="utf-8"))
+    drifted: dict[str, str] = {}
+    for filename, entry in manifest["files"].items():
+        raw = (CORPUS_DIR / filename).read_bytes()
+        # Git's blob id: sha1 over "blob <bytelen>\0" plus the content.
+        actual = hashlib.sha1(
+            b"blob %d\0" % len(raw) + raw
+        ).hexdigest()  # noqa: S324 - git's format, not a security digest
+        if actual != entry["blob_sha"]:
+            drifted[filename] = f"expected {entry['blob_sha']}, got {actual}"
+
+    assert not drifted, f"vendored corpus no longer matches upstream {manifest['upstream']['ref']}: {drifted}"
+    assert set(manifest["files"]) == {
+        p.name for p in CORPUS_DIR.glob("*.yml")
+    }, "provenance.json and the vendored files disagree about which files exist"
