@@ -32,9 +32,20 @@ reason = "The zizmor wheel embeds a Rust binary linking ring and aws-lc-rs (non-
 zizmor__finding = "tap_plugin.zizmor.models.finding.ZizmorFinding"
 zizmor__run = "tap_plugin.zizmor.models.run.ZizmorRun"
 
-# [edges], [grift], collector and panel registration land with their requirements:
-# req-zizmor-finding (edges), req-zizmor-run (edges), req-zizmor-pages / req-zizmor-panel-*,
-# req-zizmor-trigger, req-zizmor-record.
+# The five edges a finding and a run need to exist ON the grid rather than beside it
+# (req-zizmor-finding, req-zizmor-run). Two of them target github_core types, which is why
+# github_core is a Tier-1 dependency above: the endpoints must be registered before these
+# resolve. Endpoint IDs are derived by github_core's own identity functions, never re-minted
+# here (tap_plugin/github_core/collectors/github_collector/identity.py).
+[edges]
+PRODUCED_FINDING__zizmor = "edges/PRODUCED_FINDING.edge.json"
+SCANNED_WORKFLOW__zizmor = "edges/SCANNED_WORKFLOW.edge.json"
+FLAGS_WORKFLOW__zizmor = "edges/FLAGS_WORKFLOW.edge.json"
+FLAGS_JOB__zizmor = "edges/FLAGS_JOB.edge.json"
+FLAGS_ACTION__zizmor = "edges/FLAGS_ACTION.edge.json"
+
+# [grift], collector and panel registration land with their requirements:
+# req-zizmor-pages / req-zizmor-panel-*, req-zizmor-trigger, req-zizmor-record.
 
 [[boot.records]]
 name = "ci"

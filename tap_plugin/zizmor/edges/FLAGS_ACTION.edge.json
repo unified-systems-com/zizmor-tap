@@ -1,0 +1,31 @@
+{
+  "slug": "FLAGS_ACTION__zizmor",
+  "name": "Flags Action",
+  "description": "The finding is about a `uses:` reference to this action. Nine of the scanner's audits are about action references — unpinned, stale, confusable, impostor, typosquatted, archived, superfluous, forbidden, known-vulnerable — and attaching those to the workflow file alone loses the join the question actually needs: which findings concern an action that other jobs also call. The target is the action with its ref stripped, matching how github_core keys the node; the specific pin the finding concerns rides on this edge.",
+  "sources": [
+    "zizmor__finding"
+  ],
+  "targets": [
+    "github_core__github_action"
+  ],
+  "default_dimensions": {
+    "github.platform": "github.com",
+    "github.surface": "actions",
+    "github.observation": "declaration"
+  },
+  "property_schema": {
+    "type": "object",
+    "required": [
+      "uses"
+    ],
+    "additionalProperties": false,
+    "description": "Which reference the finding is about. The action NODE is keyed on the path with the ref stripped (one `actions/checkout` for the whole grid), so the ref has to live here or the finding loses the pin it was reporting on.",
+    "properties": {
+      "uses": {
+        "type": "string",
+        "minLength": 1,
+        "description": "The `uses:` value exactly as written at the site the finding names, ref included (`actions/checkout@v4`). Carried whole rather than split into path and ref: the ref is derivable from this string, and storing both would be the same fact written twice. What the pin MEANS — its kind, whether it is immutable, what it resolved to — is github_core's `USES_ACTION` edge's fact, never re-derived here."
+      }
+    }
+  }
+}

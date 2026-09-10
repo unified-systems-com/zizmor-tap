@@ -1,0 +1,16 @@
+{
+  "slug": "FLAGS_WORKFLOW__zizmor",
+  "name": "Flags Workflow",
+  "description": "The finding concerns this workflow file. Every finding the scanner emits locates a workflow, so this is the one edge a finding always has — the anchor that puts a scanner's assertion next to the asset it is about, rather than in a list beside it.",
+  "sources": [
+    "zizmor__finding"
+  ],
+  "targets": [
+    "github_core__github_workflow"
+  ],
+  "default_dimensions": {
+    "github.platform": "github.com",
+    "github.surface": "actions",
+    "github.observation": "declaration"
+  }
+}
