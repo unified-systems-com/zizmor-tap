@@ -1,0 +1,74 @@
+{
+  "version": 1,
+  "description": "zizmor CI record (req-boot-bootstrap-ci-record, tap#365) — the stack this plugin's own tests run in, and the one claim per-plugin CI is allowed to make: that zizmor is correct against the dependencies it DECLARES and nothing else. Install set is exactly the depends_on closure (identity_core, git_core, compliance_core, github_core) plus zizmor itself; the consumer flips the self entry to editable so the CHECKOUT under test runs, not the pinned revision. Population is empty: this plugin ships no GRIFT to seed. DELIBERATELY EXCLUDED: every other plugin, all credentials, all required_secrets, and any population step that reaches the network — so a fork can run this lane and a nightly cannot flake on a third party (req-boot-bootstrap-ci-record-5). Reproduce CI exactly: spawn --from 'git+https://github.com/unified-systems-com/zizmor-tap@97190065bff3a88d4c2a2aa52926660708bf167f#ci' --dev-plugins zizmor",
+  "install": {
+    "plugins": [
+      {
+        "slug": "identity_core",
+        "enabled": true,
+        "source": {
+          "type": "git",
+          "url": "https://github.com/unified-systems-com/tap-plugin-identity-core",
+          "rev": "v0.1.2"
+        },
+        "note": "Transitive: a dependency of github_core. Pinned at v0.1.2, the release current on 2026-09-09. Public repo, no credential (req-tap-plugin-arch-source-secret-5)."
+      },
+      {
+        "slug": "git_core",
+        "enabled": true,
+        "source": {
+          "type": "git",
+          "url": "https://github.com/unified-systems-com/git-core-tap",
+          "rev": "v0.1.0"
+        },
+        "note": "Transitive: a dependency of github_core. Pinned at v0.1.0, the release current on 2026-09-09. Public repo, no credential (req-tap-plugin-arch-source-secret-5)."
+      },
+      {
+        "slug": "compliance_core",
+        "enabled": true,
+        "source": {
+          "type": "git",
+          "url": "https://github.com/unified-systems-com/tap-plugin-compliance-core",
+          "rev": "v0.2.2"
+        },
+        "note": "Transitive: a dependency of github_core. Pinned at v0.2.2, the release current on 2026-09-09. Public repo, no credential (req-tap-plugin-arch-source-secret-5)."
+      },
+      {
+        "slug": "github_core",
+        "enabled": true,
+        "source": {
+          "type": "git",
+          "url": "https://github.com/unified-systems-com/tap-plugin-github-core",
+          "rev": "v0.6.0"
+        },
+        "note": "Declared in depends_on. Pinned at v0.6.0, the release current on 2026-09-09. Public repo, no credential (req-tap-plugin-arch-source-secret-5)."
+      },
+      {
+        "slug": "zizmor",
+        "enabled": true,
+        "source": {
+          "type": "git",
+          "url": "https://github.com/unified-systems-com/zizmor-tap",
+          "rev": "97190065bff3a88d4c2a2aa52926660708bf167f"
+        },
+        "note": "Self, pinned like any app-of-apps record — the CONSUMER (plugin-ci boot-and-test, or `spawn --dev-plugins zizmor`) substitutes the checkout under test via tap.dev_workspace (req-boot-bootstrap-ci-record-4). Booting this record unflipped runs the pinned revision."
+      }
+    ]
+  },
+  "population": {
+    "on_failure": "abort",
+    "steps": []
+  },
+  "fips_waivers": [
+    {
+      "artifact": "*/bin/zizmor",
+      "provider": "boringssl",
+      "reason": "zizmor is a static YAML linter for GitHub Actions workflows; the shipped Rust binary links boringssl and aws-lc-rs for its HTTPS client (fetching remote workflow references), which TAP never invokes in the operational request path — the plugin runs zizmor on local files only. No TAP data is encrypted, signed or hashed by these providers. Waived for the plugin's own test stack (zizmor-tap#10 owns the product decision: declare in [fips] or build against system OpenSSL)."
+    },
+    {
+      "artifact": "*/bin/zizmor",
+      "provider": "rust-aws-lc-rs",
+      "reason": "zizmor is a static YAML linter for GitHub Actions workflows; the shipped Rust binary links boringssl and aws-lc-rs for its HTTPS client (fetching remote workflow references), which TAP never invokes in the operational request path — the plugin runs zizmor on local files only. No TAP data is encrypted, signed or hashed by these providers. Waived for the plugin's own test stack (zizmor-tap#10 owns the product decision: declare in [fips] or build against system OpenSSL)."
+    }
+  ]
+}
