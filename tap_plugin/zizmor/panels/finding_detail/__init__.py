@@ -44,6 +44,15 @@ if TYPE_CHECKING:
 
 DEFAULT_FINDING_VAR = "finding_id"
 
+#: Where to send a reader who wants the workflow itself — its anatomy, its jobs, its run history.
+#: NOT hardcoded: zizmor depends on github_core, not on any product's pages, so the consuming
+#: instance names the target in panel config as a URL template (`workflow_page_template`) with
+#: `{full_name}`, `{path}` and `{workflow_id}` placeholders — the same idiom as a graph panel's
+#: nav_rules. A template rather than a slug-plus-variable because the generic viewer is keyed by
+#: repository AND file, not by a single id. The link renders only when the page it names exists on
+#: this grid, so a deployment without one gets no link rather than a dead one.
+WORKFLOW_PAGE_FIELDS = ("full_name", "path", "workflow_id")
+
 EDGE_PRODUCED_FINDING = "PRODUCED_FINDING__zizmor"
 EDGE_FLAGS_WORKFLOW = "FLAGS_WORKFLOW__zizmor"
 EDGE_FLAGS_JOB = "FLAGS_JOB__zizmor"
@@ -52,6 +61,22 @@ EDGE_FLAGS_ACTION = "FLAGS_ACTION__zizmor"
 #: Severities that deserve visual weight. Kept here rather than in the template so the template
 #: stays dumb and the decision is reviewable in one place.
 LOUD_SEVERITIES = frozenset({"High", "Medium"})
+
+
+def _where(location: dict[str, Any], job_key: str) -> str:
+    """One phrase for where the finding is, instead of three fields that each report an absence.
+
+    A workflow-level finding has no job, an empty `route`, and a span starting at row 1 — the old
+    page printed all three as separate rows ("Job: this is not about a job", "Route: (workflow
+    level)", "Line: 1:0"), which is three ways of saying the same nothing. Say it once.
+    """
+    row = location.get("row")
+    end = location.get("end_row")
+    if not job_key and not location.get("route"):
+        return f"the whole file, lines {row}\u2013{end}" if row and end and end != row else "the whole file"
+    if row and end and end != row:
+        return f"lines {row}\u2013{end}"
+    return f"line {row}" if row else ""
 
 
 class ZizmorFindingDetailPanelType:
@@ -103,12 +128,96 @@ class ZizmorFindingDetailPanelType:
             "reusable_workflow": tags.get("uses_reusable_workflow", ""),
             "ignored_by_config": bool(tags.get("ignored_by_config")),
             "fixes": finding.fixes or [],
+            # One phrase rather than three fields that each report the same absence.
+            "where": _where(location, location.get("job_key") or ""),
+            # What the grid knows that the scanner cannot — see _bearing().
+            "bearing": cls._bearing(finding, cls._workflow(finding)),
+            "workflow_url": cls._workflow_url(panel, cls._workflow(finding)),
         }
 
     # ------------------------------------------------------------------
     # Joins. Each returns None when the endpoint is genuinely absent; the caller renders the
     # recorded reason rather than a blank.
     # ------------------------------------------------------------------
+
+    @classmethod
+    def _workflow_url(cls, panel: Panel, workflow: GithubWorkflow | None) -> str:
+        """A link to the workflow's own page, or "" when this grid has no such page.
+
+        Checked against the live Page rather than assumed: a dead link that looks live is worse
+        than no link, and which page plays this role is the instance's choice, not zizmor's.
+        A placeholder with no value voids the whole link, for the same reason.
+        """
+        from urllib.parse import quote
+
+        from tap_web.models import Page
+
+        template = ((getattr(panel, "config", None) or {}).get("workflow_page_template") or "").strip()
+        if not template or workflow is None:
+            return ""
+        url = template
+        for field in WORKFLOW_PAGE_FIELDS:
+            token = "{" + field + "}"
+            if token not in url:
+                continue
+            value = getattr(workflow, field, None)
+            if value in (None, ""):
+                return ""
+            url = url.replace(token, quote(str(value), safe="/"))
+        slug = url.split("?", 1)[0]
+        return url if Page.objects.filter(slug=slug).exists() else ""
+
+    @classmethod
+    def _bearing(cls, finding: ZizmorFinding, workflow: GithubWorkflow | None) -> dict[str, Any]:
+        """What the grid knows that changes how much this finding matters.
+
+        zizmor reads one file and cannot tell a workflow that gates main from a fixture that has
+        never run. The grid can. Four things move the decision, and each is stated with its own
+        third state rather than collapsed into a reassuring blank:
+
+        * **Exposure** — how the workflow can start. `workflow_dispatch` alone is a different
+          risk from `pull_request_target`.
+        * **Traffic** — runs IN THE COLLECTED WINDOW. Zero is *not* "never ran"; it is "none in
+          what we have", and it is written that way.
+        * **Consequence** — the repository's visibility and the criticality its org declares.
+        * **Pattern** — the same audit elsewhere. A rule firing across seven files is a default
+          someone should change once, not seven bugs.
+        """
+        from tap_plugin.github_core.models.github_actions_run import GithubActionsRun
+        from tap_plugin.github_core.models.github_repository import GithubRepository
+
+        out: dict[str, Any] = {
+            "triggers": [],
+            "runs": None,
+            "visibility": "",
+            "criticality": "",
+            "same_file": 0,
+            "same_audit": 0,
+            "same_audit_files": 0,
+        }
+        path = (finding.location or {}).get("path") or ""
+        if path:
+            out["same_file"] = (
+                ZizmorFinding.objects.filter(location__path=path).exclude(entity_id=finding.entity_id).count()
+            )
+        siblings = list(ZizmorFinding.objects.filter(audit_id=finding.audit_id).values_list("location", flat=True))
+        out["same_audit"] = len(siblings)
+        out["same_audit_files"] = len({(loc or {}).get("path") for loc in siblings if (loc or {}).get("path")})
+
+        if workflow is None:
+            return out
+        cfg = getattr(workflow, "configuration", None) or {}
+        out["triggers"] = cfg.get("triggers") or []
+        wf_id = getattr(workflow, "workflow_id", None)
+        if wf_id:
+            out["runs"] = GithubActionsRun.objects.filter(
+                full_name=workflow.full_name, configuration__workflow_id=wf_id
+            ).count()
+        repo = GithubRepository.objects.filter(full_name=workflow.full_name).first()
+        if repo is not None:
+            out["visibility"] = getattr(repo, "visibility", "") or ""
+            out["criticality"] = (getattr(repo, "custom_properties", None) or {}).get("criticality") or ""
+        return out
 
     @staticmethod
     def _producing_run(finding: ZizmorFinding) -> ZizmorRun | None:

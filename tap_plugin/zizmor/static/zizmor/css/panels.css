@@ -263,3 +263,41 @@
     line-height: 1.5;
     padding: 0.5rem 0;
 }
+
+/* Finding detail: the rule slug is an eyebrow, the summary is the headline, the scanner's own
+   observation is the standfirst, and the determinations are one quiet line rather than three chips. */
+.tap-zizmor-finding__rule { margin: 0 0 .15rem; font-size: .78rem; letter-spacing: .04em; text-transform: uppercase; opacity: .75; }
+.tap-zizmor-finding__rule a { text-decoration: none; }
+.tap-zizmor-finding__rule a:hover { text-decoration: underline; }
+.tap-zizmor-finding__annotation { margin: .35rem 0 0; font-size: 1rem; }
+.tap-zizmor-finding__determinations { display: flex; align-items: center; gap: .5rem; margin: .55rem 0 0; }
+.tap-zizmor-finding__determ-rest { font-size: .82rem; opacity: .7; cursor: help; }
+.tap-zizmor-finding__section--do { border-left: 3px solid currentColor; padding-left: .9rem; }
+.tap-zizmor-finding__place { margin: .2rem 0; }
+.tap-zizmor-finding__span { opacity: .7; }
+.tap-zizmor-finding__prov { margin-top: 1.1rem; font-size: .9rem; }
+.tap-zizmor-finding__prov > summary { cursor: pointer; opacity: .75; }
+
+/* ONE TYPE SCALE. The page previously ran tiny-caps -> 1.05rem -> 1rem -> 0.82rem -> tiny-caps,
+   so section headings were SMALLER than the body they introduced and shouted in capitals to make
+   up for it. Headings now step down by size and weight; capitals are reserved for the eyebrow. */
+.tap-zizmor-finding__head h3 { font-size: 1.55rem; line-height: 1.2; font-weight: 600; letter-spacing: -0.01em; margin: .1rem 0 0; text-transform: none; }
+.tap-zizmor-finding__rule { font-size: .72rem; }
+.tap-zizmor-finding__annotation { font-size: 1.02rem; opacity: .82; margin-top: .4rem; }
+.tap-zizmor-finding__determinations { margin-top: .7rem; }
+.tap-zizmor-finding__section h4 { font-size: 1.02rem; font-weight: 600; letter-spacing: 0; text-transform: none; margin: 0 0 .45rem; }
+.tap-zizmor-finding__section { margin-top: 1.5rem; padding-top: 1.1rem; border-top: 1px solid rgba(128,128,128,.22); }
+.tap-zizmor-finding__section--do { border-top: 1px solid rgba(128,128,128,.22); border-left: none; padding-left: 0; }
+.tap-zizmor-finding__meaning { font-size: .88rem; opacity: .72; }
+
+/* Bearing: a key/value ladder, aligned, so the four signals read as one block. */
+.tap-zizmor-bearing { list-style: none; margin: .6rem 0 0; padding: 0; display: grid; gap: .3rem; }
+.tap-zizmor-bearing li { display: grid; grid-template-columns: 8.5rem 1fr; gap: .8rem; align-items: baseline; }
+.tap-zizmor-bearing__k { font-size: .78rem; text-transform: uppercase; letter-spacing: .05em; opacity: .6; }
+.tap-zizmor-bearing__v { font-size: .95rem; }
+
+/* Title Case the headline in CSS, not with Django's `title` filter. The filter lowercases the
+   rest of every word, so "use GitHub's dedicated self-repository syntax" becomes "Use Github'S
+   Dedicated ..." — it breaks GitHub and mangles the apostrophe. `capitalize` only raises the
+   first letter of each word and leaves the rest of the string alone. */
+.tap-zizmor-finding__head h3 { text-transform: capitalize; }

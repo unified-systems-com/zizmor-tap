@@ -449,7 +449,7 @@ nothing in it.
 | ACID | Title | Status | Description | Notes |
 | --- | --- | :---: | --- | --- |
 | req-zizmor-page-finding-1 | Resolves The Finding | Implemented | With a valid `finding_id` the detail panel renders that finding; with an unknown id the page says so. | |
-| req-zizmor-page-finding-2 | Links Out | Implemented | The workflow, job (when resolved) and run links resolve to their pages. | |
+| req-zizmor-page-finding-2 | Links Out | Implemented | The workflow, job (when resolved) and run links resolve to their pages. The workflow link is built from `panel.config.workflow_page_template` (`{full_name}` / `{path}` / `{workflow_id}` placeholders; the instance names the page) and rendered ONLY when that Page exists on the grid — never a dead link. | zizmor-tap#31; the shipped instance template is `/github_core/workflow?workflow_id={workflow_id}` |
 
 ### Panel: About
 ----

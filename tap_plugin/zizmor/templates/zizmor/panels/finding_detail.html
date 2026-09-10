@@ -5,61 +5,113 @@
     <article class="tap-zizmor-finding">
 
         <header class="tap-zizmor-finding__head {% if is_loud %}tap-zizmor-finding__head--loud{% endif %}">
-            <h3>
+            {# The rule slug is zizmor's name for this, not the reader's. Lead with what is wrong. #}
+            <p class="tap-zizmor-finding__rule">
                 {% if finding.audit_url %}<a href="{{ finding.audit_url }}" target="_blank" rel="noopener noreferrer">{{ finding.audit_id }}</a>
                 {% else %}{{ finding.audit_id }}{% endif %}
-            </h3>
-            <p class="tap-zizmor-finding__summary">{{ finding.summary }}</p>
-            <div class="tap-zizmor-finding__determinations">
+            </p>
+            <h3>{{ finding.summary|default:finding.audit_id }}</h3>
+            {% if location.annotation %}
+            {# The scanner's own observation, promoted: it used to float unlabelled between sections. #}
+            <p class="tap-zizmor-finding__annotation">{{ location.annotation }}</p>
+            {% endif %}
+            <p class="tap-zizmor-finding__determinations">
                 <span class="tap-zizmor-badge tap-zizmor-badge--sev-{{ finding.severity|lower }}">{{ finding.severity }} severity</span>
-                <span class="tap-zizmor-badge">{{ finding.confidence }} confidence</span>
-                <span class="tap-zizmor-badge">{{ finding.persona }} persona</span>
+                <span class="tap-zizmor-finding__determ-rest"
+                      title="Confidence is how sure zizmor is. Persona is which audit set this belongs to — an auditor run emits regular, pedantic and auditor findings together, and the persona is how you decide whether it is worth acting on.">{{ finding.confidence }} confidence · {{ finding.persona }} persona</span>
                 {% if ignored_by_config %}<span class="tap-zizmor-badge tap-zizmor-badge--muted">ignored by config</span>{% endif %}
-            </div>
-            {% if finding.persona != "Regular" %}
-            <p class="tap-zizmor-finding__note">
-                This is a <strong>{{ finding.persona|lower }}</strong>-persona finding. An auditor run emits regular,
-                pedantic and auditor findings together; the persona is how you decide whether it is worth acting on.
+            </p>
+        </header>
+
+        {# What to change, second — this is a security finding and the fix is the point of the page. #}
+        <section class="tap-zizmor-finding__section tap-zizmor-finding__section--do">
+            <h4>What to change</h4>
+            {% if fixes %}
+            <ul class="tap-zizmor-finding__fixes">
+                {% for fix in fixes %}
+                <li>
+                    <span>{{ fix.title }}</span>
+                    <span class="tap-zizmor-badge {% if fix.disposition == 'unsafe' %}tap-zizmor-badge--unsafe{% endif %}">{{ fix.disposition }}</span>
+                </li>
+                {% endfor %}
+            </ul>
+            <p class="tap-zizmor-finding__meaning">
+                <strong>safe</strong> means zizmor believes the change preserves behaviour; <strong>unsafe</strong>
+                means it may not. Neither is applied automatically — TAP records what the scanner offers, it does not
+                rewrite your workflows.
+            </p>
+            {% elif finding.audit_url %}
+            <p class="tap-zizmor-finding__meaning">
+                zizmor offers no machine-applicable fix for this one. Its rule page explains the change to make:
+                <a href="{{ finding.audit_url }}" target="_blank" rel="noopener noreferrer">{{ finding.audit_id }}</a>.
+            </p>
+            {% else %}
+            <p class="tap-zizmor-finding__absent">
+                zizmor offers no machine-applicable fix for this one, and this build carries no rule link for it.
             </p>
             {% endif %}
-        </header>
+        </section>
+
+        <section class="tap-zizmor-finding__section">
+            <h4>Does this matter here?</h4>
+            <p class="tap-zizmor-finding__meaning">
+                zizmor reads one file. These four come from the grid, and they are what separate a workflow that
+                gates <code>main</code> from a fixture nothing runs.
+            </p>
+            <ul class="tap-zizmor-bearing">
+                <li>
+                    <span class="tap-zizmor-bearing__k">Starts on</span>
+                    <span class="tap-zizmor-bearing__v">{% if bearing.triggers %}{{ bearing.triggers|join:", " }}{% else %}<span class="tap-zizmor-finding__absent">no triggers collected for this workflow</span>{% endif %}</span>
+                </li>
+                <li>
+                    <span class="tap-zizmor-bearing__k">Runs</span>
+                    <span class="tap-zizmor-bearing__v">
+                        {% if bearing.runs is None %}<span class="tap-zizmor-finding__absent">not observed — no workflow on the grid to count runs against</span>
+                        {% elif bearing.runs == 0 %}<strong>none in the collected window</strong> <span class="tap-zizmor-finding__absent">— which is not the same as never</span>
+                        {% else %}{{ bearing.runs }} in the collected window{% endif %}
+                    </span>
+                </li>
+                <li>
+                    <span class="tap-zizmor-bearing__k">Repository</span>
+                    <span class="tap-zizmor-bearing__v">{% if bearing.visibility %}{{ bearing.visibility }}{% if bearing.criticality %}, criticality {{ bearing.criticality }}{% endif %}{% else %}<span class="tap-zizmor-finding__absent">not on the grid</span>{% endif %}</span>
+                </li>
+                <li>
+                    <span class="tap-zizmor-bearing__k">This rule</span>
+                    <span class="tap-zizmor-bearing__v">
+                        {% if bearing.same_audit > 1 %}fires <strong>{{ bearing.same_audit }}</strong> times across {{ bearing.same_audit_files }} file{{ bearing.same_audit_files|pluralize }} — a default worth changing once, not {{ bearing.same_audit }} bugs
+                        {% else %}the only one of its kind on this grid{% endif %}
+                    </span>
+                </li>
+                {% if bearing.same_file %}
+                <li>
+                    <span class="tap-zizmor-bearing__k">This file</span>
+                    <span class="tap-zizmor-bearing__v">carries {{ bearing.same_file }} other finding{{ bearing.same_file|pluralize }} — worth fixing in one pass</span>
+                </li>
+                {% endif %}
+            </ul>
+        </section>
 
         <section class="tap-zizmor-finding__section">
             <h4>Where</h4>
-            <dl class="tap-zizmor-finding__facts">
-                <div>
-                    <dt>Workflow</dt>
-                    <dd>
-                        {% if workflow %}{{ workflow.full_name }} / <code>{{ workflow.path }}</code>
-                        {% else %}<code>{{ location.path }}</code>{% endif %}
-                    </dd>
-                </div>
-                <div>
-                    <dt>Job</dt>
-                    <dd>
-                        {% if job %}<code>{{ job.job_key }}</code>{% if job.name %} — {{ job.name }}{% endif %}
-                        {% elif job_unresolved %}<span class="tap-zizmor-finding__absent">{{ job_unresolved }}</span>
-                        {% elif location.job_key %}<code>{{ location.job_key }}</code>
-                        {% else %}<span class="tap-zizmor-finding__absent">This finding is about the workflow as a whole, not a single job.</span>{% endif %}
-                    </dd>
-                </div>
-                {% if location.step_index is not None %}
-                <div><dt>Step</dt><dd>index {{ location.step_index }}</dd></div>
-                {% endif %}
-                <div><dt>Route</dt><dd><code>{{ location.route|default:"(workflow level)" }}</code></dd></div>
-                {% if location.row is not None %}
-                <div><dt>Line</dt><dd>{{ location.row }}:{{ location.column }}</dd></div>
-                {% endif %}
-            </dl>
-
+            <p class="tap-zizmor-finding__place">
+                {% if workflow %}{{ workflow.full_name }} /
+                    {% if workflow_url %}<a href="{{ workflow_url }}"><code>{{ workflow.path }}</code></a>
+                    {% else %}<code>{{ workflow.path }}</code>{% endif %}
+                {% else %}<code>{{ location.path }}</code>{% endif %}
+                {% if where %}<span class="tap-zizmor-finding__span">— {{ where }}</span>{% endif %}
+            </p>
+            {% if job %}
+            <p class="tap-zizmor-finding__place">In job <code>{{ job.job_key }}</code>{% if job.name %} — {{ job.name }}{% endif %}</p>
+            {% elif job_unresolved %}
+            <p class="tap-zizmor-finding__absent">{{ job_unresolved }}</p>
+            {% elif location.job_key %}
+            <p class="tap-zizmor-finding__place">In job <code>{{ location.job_key }}</code></p>
+            {% endif %}
             {% if location.subfeature %}
             <p class="tap-zizmor-finding__subfeature">
                 The finding is about this expression specifically:
                 <code class="tap-zizmor-finding__fragment">{{ location.subfeature }}</code>
             </p>
-            {% endif %}
-            {% if location.annotation %}
-            <p class="tap-zizmor-finding__annotation">“{{ location.annotation }}”</p>
             {% endif %}
             {% if location.feature %}
             <pre class="tap-zizmor-finding__code"><code>{{ location.feature }}</code></pre>
@@ -105,27 +157,8 @@
         </section>
         {% endif %}
 
-        {% if fixes %}
-        <section class="tap-zizmor-finding__section">
-            <h4>Fixes zizmor offers</h4>
-            <ul class="tap-zizmor-finding__fixes">
-                {% for fix in fixes %}
-                <li>
-                    <span>{{ fix.title }}</span>
-                    <span class="tap-zizmor-badge {% if fix.disposition == 'unsafe' %}tap-zizmor-badge--unsafe{% endif %}">{{ fix.disposition }}</span>
-                </li>
-                {% endfor %}
-            </ul>
-            <p class="tap-zizmor-finding__meaning">
-                <strong>safe</strong> means zizmor believes the change preserves behaviour; <strong>unsafe</strong>
-                means it may not. Neither is applied automatically — TAP records what the scanner offers, it does not
-                rewrite your workflows.
-            </p>
-        </section>
-        {% endif %}
-
-        <section class="tap-zizmor-finding__section">
-            <h4>Provenance</h4>
+        <details class="tap-zizmor-finding__prov">
+            <summary>Provenance — scanner, and how long this has been here</summary>
             <dl class="tap-zizmor-finding__facts">
                 <div><dt>Scanner</dt><dd>zizmor {{ finding.scanner_version }}</dd></div>
                 <div><dt>First seen</dt><dd>{{ finding.known_since|default:"—" }}</dd></div>
@@ -139,7 +172,7 @@
                 <strong>First seen</strong> does not move when a later run re-observes the same finding, so the gap
                 between these two is how long this has actually been here — not how recently it was noticed.
             </p>
-        </section>
+        </details>
 
         <details class="tap-zizmor-finding__raw">
             <summary>The scanner's own assertion, verbatim</summary>
