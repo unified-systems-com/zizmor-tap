@@ -72,11 +72,15 @@ def _where(location: dict[str, Any], job_key: str) -> str:
     """
     row = location.get("row")
     end = location.get("end_row")
-    if not job_key and not location.get("route"):
+    route = location.get("route") or ""
+    if not job_key and not route:
         return f"the whole file, lines {row}\u2013{end}" if row and end and end != row else "the whole file"
-    if row and end and end != row:
-        return f"lines {row}\u2013{end}"
-    return f"line {row}" if row else ""
+    span = f"lines {row}\u2013{end}" if row and end and end != row else (f"line {row}" if row else "")
+    # The route (jobs/<job>/steps/2/run) and the step index are the precision that tells two
+    # findings on one line apart; they ride the same phrase rather than their own rows.
+    step = location.get("step_index")
+    precise = " \u00b7 ".join(p for p in (span, route, f"step {step}" if step is not None else "") if p)
+    return precise
 
 
 class ZizmorFindingDetailPanelType:
@@ -191,21 +195,31 @@ class ZizmorFindingDetailPanelType:
             "runs": None,
             "visibility": "",
             "criticality": "",
-            "same_file": 0,
+            # None, not 0: without a resolved workflow the file cannot be scoped, and "0 other
+            # findings" would read as clean (the same_file/same_audit_files counts are per
+            # WORKFLOW ENTITY, via FLAGS_WORKFLOW — `.github/workflows/nightly.yml` names 16
+            # different files across this org, and a path-keyed count conflated them).
+            "same_file": None,
             "same_audit": 0,
             "same_audit_files": 0,
         }
-        path = (finding.location or {}).get("path") or ""
-        if path:
-            out["same_file"] = (
-                ZizmorFinding.objects.filter(location__path=path).exclude(entity_id=finding.entity_id).count()
-            )
-        siblings = list(ZizmorFinding.objects.filter(audit_id=finding.audit_id).values_list("location", flat=True))
-        out["same_audit"] = len(siblings)
-        out["same_audit_files"] = len({(loc or {}).get("path") for loc in siblings if (loc or {}).get("path")})
+        sibling_ids = list(ZizmorFinding.objects.filter(audit_id=finding.audit_id).values_list("entity_id", flat=True))
+        out["same_audit"] = len(sibling_ids)
+        out["same_audit_files"] = (
+            Edge.objects.filter(from_entity_id__in=sibling_ids, edge_type=EDGE_FLAGS_WORKFLOW)
+            .values("to_entity_id")
+            .distinct()
+            .count()
+        )
 
         if workflow is None:
             return out
+        this_file = Edge.objects.filter(to_entity_id=workflow.entity_id, edge_type=EDGE_FLAGS_WORKFLOW).values_list(
+            "from_entity_id", flat=True
+        )
+        out["same_file"] = (
+            ZizmorFinding.objects.filter(entity_id__in=list(this_file)).exclude(entity_id=finding.entity_id).count()
+        )
         cfg = getattr(workflow, "configuration", None) or {}
         out["triggers"] = cfg.get("triggers") or []
         wf_id = getattr(workflow, "workflow_id", None)
