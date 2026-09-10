@@ -87,7 +87,10 @@ class ZizmorRun(BaseModel):
     scanner_version = models.CharField(max_length=64, blank=True, default="", db_index=True)
     persona = models.CharField(max_length=16, blank=True, default="Auditor")
     audit_set = models.JSONField(default=list, blank=True)
-    # The four audits zizmor cannot run offline, recorded as skipped on every v0 run.
+    # The audits zizmor refused to run, and why — DERIVED per run from the binary's own `-vv`
+    # registry diagnostics, never a list authored here. *Observed* 2026-09-10 on 1.30.0: five, not
+    # the four the prior-art survey guessed (`impostor-commit`, `ref-confusion`,
+    # `known-vulnerable-actions`, `stale-action-refs`, `ref-version-mismatch`).
     skipped_audits = models.JSONField(default=list, blank=True)
     outcome = models.CharField(max_length=16, blank=True, default="running", db_index=True)
     # The github_core collection job (entity id) whose rows this run read — provenance, not timing.
