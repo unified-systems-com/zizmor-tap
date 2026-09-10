@@ -260,3 +260,117 @@ def test_the_scanners_verbatim_assertion_is_carried_through(db: None) -> None:
     raw = {"ident": "template-injection", "determinations": {"severity": "High"}}
 
     assert _ctx(_finding(raw=raw))["finding"].raw == raw
+
+
+# ---------------------------------------------------------------------------
+# Usability pass — the page must not print a section it cannot fill, a value
+# twice, or Python syntax.
+# ---------------------------------------------------------------------------
+
+
+def test_a_job_with_nothing_recorded_yields_no_facts_so_the_section_can_be_omitted(db: None) -> None:
+    """A heading over a blank body reads as "no permissions" when it means "not recorded".
+
+    The template cannot decide this after the fact, so presence is computed here.
+    """
+    finding = _finding()
+    _edge(EDGE_FLAGS_JOB, finding.entity_id, _job("build"))  # resolved, but nothing recorded on it
+
+    ctx = _ctx(finding)
+
+    assert ctx["job"] is not None
+    assert ctx["job_facts"] == []
+
+
+def test_a_job_with_context_yields_facts_in_reading_order(db: None) -> None:
+    """The over-suppression check: omitting empties must not omit content."""
+    finding = _finding()
+    _edge(
+        EDGE_FLAGS_JOB,
+        finding.entity_id,
+        _job("build", permissions={"issues": "write"}, runs_on=["ubuntu-latest"], if_condition="always()"),
+    )
+
+    labels = [label for label, _ in _ctx(finding)["job_facts"]]
+
+    assert labels == ["Permissions", "Runner", "Condition"]
+
+
+@pytest.mark.parametrize(
+    ("raw", "expected"),
+    [
+        ({"issues": "write", "contents": "read"}, "issues: write, contents: read"),
+        (["ubuntu-latest"], "ubuntu-latest"),
+        (["self-hosted", "linux"], "self-hosted, linux"),
+        ("production", "production"),
+    ],
+)
+def test_json_values_render_as_prose_not_python_repr(db: None, raw: object, expected: str) -> None:
+    """`str()` on a JSONField puts `{'issues': 'write'}` on the page, quotes and all, which the
+    template then escapes into `&#x27;` soup."""
+    assert Panel._humanize(raw) == expected
+
+
+def test_the_fragment_is_suppressed_when_it_is_the_whole_excerpt(db: None) -> None:
+    """The same string shown twice reads as two facts."""
+    same = "./.github/workflows/api-fuzz.yml"
+    finding = _finding(location={"path": "x.yml", "route": "jobs/a/uses", "feature": same, "subfeature": same})
+
+    ctx = _ctx(finding)
+
+    assert ctx["fragment"] == ""
+    assert ctx["excerpt"] == same
+
+
+def test_the_fragment_survives_when_it_is_genuinely_narrower(db: None) -> None:
+    finding = _finding(
+        location={
+            "path": "x.yml",
+            "route": "jobs/a/steps/0/run",
+            "feature": "echo ${{ matrix.image }} && build",
+            "subfeature": "matrix.image",
+        }
+    )
+
+    assert _ctx(finding)["fragment"] == "matrix.image"
+
+
+def test_a_job_whose_name_repeats_its_key_is_shown_once(db: None) -> None:
+    finding = _finding()
+    _edge(EDGE_FLAGS_JOB, finding.entity_id, _job("explore", name="explore"))
+
+    assert _ctx(finding)["job_label"] == "explore"
+
+
+def test_a_job_whose_name_adds_something_keeps_both(db: None) -> None:
+    finding = _finding()
+    _edge(EDGE_FLAGS_JOB, finding.entity_id, _job("owner-issue", name="file or close the owner issue"))
+
+    assert _ctx(finding)["job_label"] == "owner-issue — file or close the owner issue"
+
+
+def test_the_raw_assertion_is_json_not_a_python_repr(db: None) -> None:
+    """pprint emits Python repr, whose quotes HTML-escape into an unreadable wall."""
+    raw = {"ident": "template-injection", "ignored": False}
+
+    rendered = _ctx(_finding(raw=raw))["raw_json"]
+
+    assert '"ident": "template-injection"' in rendered
+    assert "'ident'" not in rendered
+    assert "false" in rendered, "JSON booleans, not Python's False"
+
+
+def test_one_sighting_collapses_the_two_timestamps(db: None) -> None:
+    """Showing 'first seen' and 'last seen' as the same instant, above a note explaining the gap
+    between them, invites reading a re-observation into a single sighting."""
+    now = timezone.now()
+    assert _ctx(_finding(known_since=now.isoformat(), observed_at=now.isoformat()))["seen_once"] is True
+
+
+def test_two_sightings_keep_both_timestamps(db: None) -> None:
+    from datetime import timedelta
+
+    now = timezone.now()
+    ctx = _ctx(_finding(known_since=(now - timedelta(days=9)).isoformat(), observed_at=now.isoformat()))
+
+    assert ctx["seen_once"] is False

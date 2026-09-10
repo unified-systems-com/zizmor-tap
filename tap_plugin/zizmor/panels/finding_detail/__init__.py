@@ -26,6 +26,7 @@ get back to the original.
 
 from __future__ import annotations
 
+import json
 from typing import TYPE_CHECKING, Any, ClassVar
 
 from django.core.exceptions import ValidationError
@@ -85,25 +86,91 @@ class ZizmorFindingDetailPanelType:
         location = finding.location or {}
         tags = finding.tags or {}
 
+        job = cls._job(finding)
+        action = cls._action(finding)
+        workflow = cls._workflow(finding)
+
+        # Presence is computed HERE, not asked in the template. A section that renders its heading
+        # and its explanation above an empty body is worse than one that is absent: it promises
+        # context and delivers a blank, which reads as "no permissions" rather than "not recorded".
+        job_facts = (
+            [
+                (label, cls._humanize(value))
+                for label, value in (
+                    ("Permissions", job.permissions),
+                    ("Runner", job.runs_on),
+                    ("Environment", job.environment),
+                    ("Condition", job.if_condition),
+                )
+                if value
+            ]
+            if job is not None
+            else []
+        )
+
+        # The same string rendered twice reads as two facts. The narrowed fragment is only worth
+        # calling out separately when it is genuinely narrower than the excerpt it sits in.
+        feature = (location.get("feature") or "").strip()
+        subfeature = (location.get("subfeature") or "").strip()
+        fragment_is_distinct = bool(subfeature) and subfeature != feature
+
+        first_seen, last_seen = finding.known_since, finding.observed_at
+
         return {
             "finding": finding,
             "state": "found",
             "requested": requested,
             "location": location,
             "tags": tags,
+            "severity_key": (finding.severity or "unknown").lower(),
             "is_loud": finding.severity in LOUD_SEVERITIES,
             "run": cls._producing_run(finding),
-            "workflow": cls._workflow(finding),
-            "job": cls._job(finding),
-            "action": cls._action(finding),
-            # Why an endpoint is missing, when it is. These are the honest-absence records the
-            # collector wrote rather than guessing an endpoint.
+            "workflow": workflow,
+            "job": job,
+            "job_facts": job_facts,
+            "action": action,
+            # A job whose key and display name are the same word is one fact, not two.
+            "job_label": cls._job_label(job, location),
+            "fragment": subfeature if fragment_is_distinct else "",
+            "excerpt": feature,
+            "first_seen": first_seen,
+            "last_seen": last_seen,
+            # When a finding has only ever been seen once these are the same instant; showing both
+            # invites reading a re-observation into a single sighting.
+            "seen_once": bool(first_seen and last_seen and first_seen == last_seen),
             "job_unresolved": tags.get("job_unresolved", ""),
             "action_unresolved": tags.get("action_unresolved", ""),
             "reusable_workflow": tags.get("uses_reusable_workflow", ""),
             "ignored_by_config": bool(tags.get("ignored_by_config")),
             "fixes": finding.fixes or [],
+            # JSON, not pprint: pprint emits Python repr, whose quotes HTML-escape into a wall of
+            # &#x27; that nobody can read.
+            "raw_json": json.dumps(finding.raw or {}, indent=2, sort_keys=True, default=str),
         }
+
+    @staticmethod
+    def _humanize(value: Any) -> str:
+        """Render a JSONField value as prose, not as Python repr.
+
+        `permissions` and `runs_on` are JSONFields, so a bare `str()` puts `{'issues': 'write'}` and
+        `['ubuntu-latest']` on the page — Python syntax leaking into a UI, quotes and all, which the
+        template then HTML-escapes into `&#x27;` soup. A permissions map reads as pairs and a runner
+        list reads as a list, because that is what they are.
+        """
+        if isinstance(value, dict):
+            return ", ".join(f"{k}: {v}" for k, v in value.items())
+        if isinstance(value, (list, tuple)):
+            return ", ".join(str(v) for v in value)
+        return str(value)
+
+    @staticmethod
+    def _job_label(job: WorkflowJob | None, location: dict[str, Any]) -> str:
+        """One label for the job: its key, plus its display name only when that adds something."""
+        if job is None:
+            return str(location.get("job_key") or "")
+        name = (job.name or "").strip()
+        key = (job.job_key or "").strip()
+        return f"{key} — {name}" if name and name != key else key
 
     # ------------------------------------------------------------------
     # Joins. Each returns None when the endpoint is genuinely absent; the caller renders the
