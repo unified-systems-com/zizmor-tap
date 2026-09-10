@@ -171,7 +171,9 @@ def test_an_upstream_collection_that_starts_mid_run_discards_the_scan(db: None) 
             "workflow_id": 4242,
             "path": ".github/workflows/ci.yml",
             "state": "active",
-            "configuration": {"raw_yaml": "name: ci\non: push\njobs:\n  b:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@main\n"},
+            "configuration": {
+                "raw_yaml": "name: ci\non: push\njobs:\n  b:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@main\n"
+            },
         },
     )
     assert created.success, created.errors
