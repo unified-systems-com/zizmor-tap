@@ -51,8 +51,12 @@ from tap_plugin.zizmor.collectors.zizmor_collector.errors import ZizmorCollector
 _PIN_RE: Final = re.compile(r"^zizmor\s*==\s*(?P<version>[^\s;,]+)")
 _VERSION_RE: Final = re.compile(r"^zizmor\s+(?P<version>\S+)")
 _SCHEDULING_RE: Final = re.compile(r"scheduling (?P<audit>[a-z0-9][a-z0-9-]*) on ")
-_SKIPPING_RE: Final = re.compile(r"skipping (?P<audit>[a-z0-9][a-z0-9-]*): (?P<reason>.+?)\s*$")
-_PARSE_FAIL_RE: Final = re.compile(r"failed to parse input: (?P<reason>.+?)\s*$")
+# A lazy `.+?` followed by `\s*$` is super-linear: on a non-matching line the engine retries
+# every split point (SonarCloud python:S8786). These read the scanner's stderr, which can
+# quote workflow file content, so the input is attacker-influencable. Capture greedily to
+# end-of-line — linear, since `.` does not cross a newline — and strip in Python.
+_SKIPPING_RE: Final = re.compile(r"skipping (?P<audit>[a-z0-9][a-z0-9-]*): (?P<reason>.+)$")
+_PARSE_FAIL_RE: Final = re.compile(r"failed to parse input: (?P<reason>.+)$")
 
 # A scan of one workflow file is a bounded, offline, local-filesystem operation; 41 ms was the
 # observed per-invocation cost (2026-09-10). The timeout exists so a pathological input cannot
@@ -256,9 +260,9 @@ def parse_diagnostics(stderr: str) -> tuple[frozenset[str], dict[str, str], str]
             continue
         match = _SKIPPING_RE.search(line)
         if match:
-            skipped[match.group("audit")] = match.group("reason")
+            skipped[match.group("audit")] = match.group("reason").strip()
             continue
         match = _PARSE_FAIL_RE.search(line)
         if match and not parse_reason:
-            parse_reason = match.group("reason")
+            parse_reason = match.group("reason").strip()
     return frozenset(scheduled), skipped, parse_reason

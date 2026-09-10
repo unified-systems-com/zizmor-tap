@@ -374,8 +374,10 @@ def test_an_unrecognised_determination_becomes_Unknown_rather_than_rejecting_the
 def test_the_persona_recorded_is_the_findings_own_not_the_runs() -> None:
     """An auditor-persona run emits regular/pedantic/auditor findings together, and which one this
     is decides whether a reader should act on it."""
-    result = decompose(_finding(determinations={"confidence": "Low", "severity": "Low", "persona": "Pedantic"}),
-                       workflow_path=".github/workflows/ci.yml")
+    result = decompose(
+        _finding(determinations={"confidence": "Low", "severity": "Low", "persona": "Pedantic"}),
+        workflow_path=".github/workflows/ci.yml",
+    )
 
     assert result.persona == "Pedantic"
 
