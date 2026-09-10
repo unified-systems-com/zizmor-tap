@@ -111,3 +111,155 @@
     line-height: 1.5;
     padding: 0.5rem 0;
 }
+
+/* ---- Finding detail ---------------------------------------------------- */
+
+.tap-zizmor-finding__head {
+    border-bottom: 1px solid #e2e8f0;
+    margin-bottom: 0.9rem;
+    padding-bottom: 0.7rem;
+}
+
+/* A High/Medium finding gets a left edge; Low and Informational do not, so weight on the page
+   tracks weight in the determination rather than every finding shouting equally. */
+.tap-zizmor-finding__head--loud {
+    border-left: 3px solid #b45309;
+    padding-left: 0.7rem;
+}
+
+.tap-zizmor-finding__head h3 {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 1.05rem;
+    margin: 0 0 0.2rem;
+}
+
+.tap-zizmor-finding__summary {
+    color: #334155;
+    margin: 0 0 0.5rem;
+}
+
+.tap-zizmor-finding__determinations {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+}
+
+.tap-zizmor-badge {
+    background: #f1f5f9;
+    border-radius: 999px;
+    color: #334155;
+    font-size: 0.75rem;
+    padding: 0.15rem 0.55rem;
+    white-space: nowrap;
+}
+
+.tap-zizmor-badge--sev-high { background: #fee2e2; color: #991b1b; }
+.tap-zizmor-badge--sev-medium { background: #fef3c7; color: #92400e; }
+.tap-zizmor-badge--unsafe { background: #fef3c7; color: #92400e; }
+.tap-zizmor-badge--muted { background: #f8fafc; color: #94a3b8; }
+
+.tap-zizmor-finding__section {
+    border-top: 1px solid #f1f5f9;
+    padding: 0.75rem 0 0;
+}
+
+.tap-zizmor-finding__section h4 {
+    color: #1e293b;
+    font-size: 0.85rem;
+    letter-spacing: 0.02em;
+    margin: 0 0 0.45rem;
+    text-transform: uppercase;
+}
+
+.tap-zizmor-finding__facts {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem 1.5rem;
+    margin: 0 0 0.5rem;
+}
+
+.tap-zizmor-finding__facts dt {
+    color: #64748b;
+    font-size: 0.7rem;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+
+.tap-zizmor-finding__facts dd {
+    color: #1e293b;
+    font-size: 0.9rem;
+    margin: 0.1rem 0 0;
+}
+
+/* An absence is prose, not a dash: the reader has to be able to tell "no job" from
+   "we could not resolve the job, and here is why". */
+.tap-zizmor-finding__absent {
+    color: #64748b;
+    font-style: italic;
+}
+
+.tap-zizmor-finding__meaning,
+.tap-zizmor-finding__note {
+    color: #64748b;
+    font-size: 0.8rem;
+    line-height: 1.5;
+    margin: 0.35rem 0 0;
+}
+
+.tap-zizmor-finding__fragment {
+    background: #fef3c7;
+    border-radius: 3px;
+    padding: 0.1rem 0.3rem;
+}
+
+.tap-zizmor-finding__annotation {
+    color: #475569;
+    font-style: italic;
+    margin: 0.4rem 0 0;
+}
+
+.tap-zizmor-finding__code,
+.tap-zizmor-finding__raw pre {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    margin: 0.5rem 0 0;
+    max-height: 18rem;
+    overflow: auto;
+    padding: 0.6rem;
+}
+
+.tap-zizmor-finding__fixes {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.tap-zizmor-finding__fixes li {
+    align-items: center;
+    border-top: 1px solid #e2e8f0;
+    display: flex;
+    gap: 0.6rem;
+    justify-content: space-between;
+    padding: 0.35rem 0;
+}
+
+.tap-zizmor-finding__raw {
+    border-top: 1px solid #f1f5f9;
+    margin-top: 0.75rem;
+    padding-top: 0.6rem;
+}
+
+.tap-zizmor-finding__raw summary {
+    color: #64748b;
+    cursor: pointer;
+    font-size: 0.8rem;
+}
+
+.tap-zizmor-finding__empty {
+    color: #64748b;
+    font-size: 0.85rem;
+    line-height: 1.5;
+    padding: 0.5rem 0;
+}

@@ -6,15 +6,15 @@
   "batches": [
     {
       "batch_entity": {
-        "entity_id": "01a08ccf-409e-74ea-aaa5-678e12fd7a42",
+        "entity_id": "01a08cf7-e07f-728e-9cc3-c0c0abbe202f",
         "entity_type": "batch",
-        "name": "zizmor Landing Page v0.1.0",
+        "name": "zizmor Pages v0.2.0",
         "dimensions": {}
       },
       "batch_node": {
         "source": "plugins.zizmor.grift.pages",
-        "name": "zizmor Landing Page v0.1.0",
-        "description": "Seeds /zizmor and its four panels: about, findings table, coverage, runs table. Coverage sits directly beneath the findings table on purpose \u2014 a findings list read without it renders a workflow nobody scanned identically to one that came back clean. See req-zizmor-page-landing."
+        "name": "zizmor Pages v0.2.0",
+        "description": "Seeds /zizmor (about, findings, coverage, runs) and /zizmor/finding \u2014 one finding in full, reached from any audit cell on the findings table. See req-zizmor-page-landing and req-zizmor-page-finding."
       },
       "nodes": [
         {
@@ -101,7 +101,11 @@
                   "title": "Audit",
                   "width": 200,
                   "headerSort": true,
-                  "header_tooltip": "zizmor's own name for the rule that fired. Each links to its documentation at docs.zizmor.sh."
+                  "header_tooltip": "zizmor's own name for the rule that fired. Click through for the finding in full \u2014 where it is, what the job it sits in is permitted to do, and how long it has been there.",
+                  "formatter": "link",
+                  "formatter_params": {
+                    "href_template": "/zizmor/finding?finding_id={data.entity_id}"
+                  }
                 },
                 {
                   "field": "data.severity",
@@ -318,6 +322,53 @@
             },
             "max_limit": 200
           }
+        },
+        {
+          "entity": {
+            "entity_id": "01a08cf7-e07f-728e-9cc3-c0c1283905e6",
+            "entity_type": "page",
+            "name": "zizmor Finding",
+            "dimensions": {
+              "tap.graph": "web"
+            }
+          },
+          "node": {
+            "slug": "/zizmor/finding",
+            "name": "zizmor Finding",
+            "nav_weight": 0,
+            "layout": {
+              "columns": {
+                "col-1": {
+                  "width": "1fr",
+                  "rows": {
+                    "row-1-detail": {
+                      "panel-id": "detail",
+                      "height": "auto"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "entity": {
+            "entity_id": "01a08cf7-e07f-728e-9cc3-c0c2dea1f00c",
+            "entity_type": "panel",
+            "name": "Finding",
+            "dimensions": {
+              "tap.graph": "web"
+            }
+          },
+          "node": {
+            "slug": "zizmor-finding-detail",
+            "name": "Finding",
+            "view": "zizmor/panels/finding_detail.html",
+            "editor_view": "",
+            "config": {
+              "hide_header": true
+            }
+          }
         }
       ],
       "edges": [
@@ -427,6 +478,26 @@
             "to_entity_id": "01a08ccf-409e-74ea-aaa5-67951862e82e",
             "edge_type": "USES_SEARCH",
             "properties": {}
+          }
+        },
+        {
+          "entity": {
+            "entity_id": "01a08cf7-e07f-728e-9cc3-c0c33dfd6346",
+            "entity_type": "edge",
+            "name": "Finding page USES_PANEL Detail",
+            "dimensions": {}
+          },
+          "edge": {
+            "from_entity_id": "01a08cf7-e07f-728e-9cc3-c0c1283905e6",
+            "to_entity_id": "01a08cf7-e07f-728e-9cc3-c0c2dea1f00c",
+            "edge_type": "USES_PANEL",
+            "properties": {
+              "hotlink": {
+                "model": "page",
+                "spec": "page-panels",
+                "value": "detail"
+              }
+            }
           }
         }
       ]

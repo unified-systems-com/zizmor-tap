@@ -97,14 +97,14 @@ is real.
 | req-zizmor-run | [Runs Are First-Class](#runs-are-first-class) | In Development | One `zizmor__run` per execution; findings and scanned workflows hang off it; unevaluated = not observed by this scanner |
 | req-zizmor-page-landing | [Page: Landing](#page-landing) | Implemented | `/zizmor` — about, findings table, runs table; every cell drills in |
 | req-zizmor-page-run | [Page: Run](#page-run) | Proposed | `/zizmor/runs/<run_id>` — summary + detail of one run |
-| req-zizmor-page-finding | [Page: Finding](#page-finding) | Proposed | `/zizmor/findings/<finding_id>` — one finding in full |
+| req-zizmor-page-finding | [Page: Finding](#page-finding) | Implemented | `/zizmor/finding?finding_id=<id>` — one finding in full, joined to its job, action and run |
 | req-zizmor-panel-coverage | [Panel: Coverage](#panel-coverage) | Implemented | What the latest run read and what it never did; the panel that stops a findings list reading as safety |
 | req-zizmor-panel-about | [Panel: About](#panel-about) | Implemented | What zizmor is; version observed from the binary; persona; offline posture and skipped audits |
 | req-zizmor-panel-findings-table | [Panel: Findings Table](#panel-findings-table) | Implemented | Latest run's findings with not-observed rows; filter by audit and severity; cells drill in |
 | req-zizmor-panel-runs-table | [Panel: Runs Table](#panel-runs-table) | Implemented | Recent runs with counts and outcome; cells drill in |
 | req-zizmor-panel-run-summary | [Panel: Run Summary](#panel-run-summary) | Proposed | One run's version, persona, source collection, coverage, counts, duration |
 | req-zizmor-panel-run-detail | [Panel: Run Detail](#panel-run-detail) | Proposed | Every finding the run produced and every workflow it scanned with outcome |
-| req-zizmor-panel-finding-detail | [Panel: Finding Detail](#panel-finding-detail) | Proposed | One finding in full, linked to its workflow, job and run |
+| req-zizmor-panel-finding-detail | [Panel: Finding Detail](#panel-finding-detail) | Implemented | One finding in full, linked to its workflow, job and run |
 | req-zizmor-online-audits | [Online Audits, Aligned To The Graph](#online-audits-aligned-to-the-graph) | Backlog | The four API-backed audits via github_core's auth seam; findings land on `github_action`/`USES_ACTION`; FIPS accounting becomes real |
 | req-zizmor-input-kinds | [Actions, Dependabot And Pre-commit Inputs](#actions-dependabot-and-pre-commit-inputs) | Backlog | Pulled by github_core collecting three more file kinds |
 | req-zizmor-persona | [Persona As A Collector Setting](#persona-as-a-collector-setting) | Backlog | Blocked on the collector-configuration channel (tap#308); until then `auditor` is fixed |
@@ -418,18 +418,32 @@ from any run cell. An unknown `run_id` renders a not-found state, never an empty
 ----
 RID: `req-zizmor-page-finding`
 
-Status: `Proposed`
+Status: `Implemented`
 
-`/zizmor/findings/<finding_id>` — one finding. Page variable `finding_id`; mounts
-`zizmor_finding_detail` (`req-zizmor-panel-finding-detail`). Reached from any finding cell; links
-out to the workflow and job pages (github_core) and back to the producing run.
+`/zizmor/finding?finding_id=<id>` — one finding. Page variable `finding_id`; mounts
+`zizmor_finding_detail` (`req-zizmor-panel-finding-detail`). Reached from the audit cell of every
+row on the findings table; joins out to the workflow, the job and the referenced action, and back to
+the producing run.
+
+**The URL is a query parameter, not a path segment** — a correction to this spec's original
+`/zizmor/findings/<finding_id>`. TAP pages take page variables from the query string
+(`request.GET`), the way github_core's repository page takes `?repository_entity_id=`; there is no
+path-variable mechanism to use. Recorded because the original form reads plausible and would be
+copied.
+
+The panel is deliberately more than a field dump. A finding on its own is a lint result; what makes
+it a *risk statement* is context the grid holds and the scanner cannot, because zizmor reads one
+file: which job the flagged line runs in, **what that job is permitted to do**, what runner it lands
+on, and which pin the reference actually carries. Those joins are the page's reason to exist. An
+unknown or malformed id renders a not-found state, never an empty page reading like a finding with
+nothing in it.
 
 #### Acceptance Criteria
 
 | ACID | Title | Status | Description | Notes |
 | --- | --- | :---: | --- | --- |
-| req-zizmor-page-finding-1 | Resolves The Finding | Proposed | With a valid `finding_id` the detail panel renders that finding; with an unknown id the page says so. | |
-| req-zizmor-page-finding-2 | Links Out | Proposed | The workflow, job (when resolved) and run links resolve to their pages. | |
+| req-zizmor-page-finding-1 | Resolves The Finding | Implemented | With a valid `finding_id` the detail panel renders that finding; with an unknown id the page says so. | |
+| req-zizmor-page-finding-2 | Links Out | Implemented | The workflow, job (when resolved) and run links resolve to their pages. | |
 
 ### Panel: About
 ----

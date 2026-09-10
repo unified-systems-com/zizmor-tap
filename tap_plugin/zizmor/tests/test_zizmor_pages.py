@@ -45,17 +45,43 @@ class _FakePanel:
 # ---------------------------------------------------------------------------
 
 
-def test_the_page_mounts_four_panels_and_every_slot_is_wired() -> None:
-    """A USES_PANEL edge whose hotlink does not match a layout slot renders nothing, silently."""
-    batch = _bundle()["batches"][0]
-    page = next(n for n in batch["nodes"] if n["entity"]["entity_type"] == "page")
+def _slots_and_wiring(batch: dict[str, Any], page: dict[str, Any]) -> tuple[set[str], set[str]]:
+    """A page's declared layout slots, and the panels actually wired into them."""
     slots = {row["panel-id"] for col in page["node"]["layout"]["columns"].values() for row in col["rows"].values()}
     hotlinks = {
-        e["edge"]["properties"]["hotlink"]["value"] for e in batch["edges"] if e["edge"]["edge_type"] == "USES_PANEL"
+        e["edge"]["properties"]["hotlink"]["value"]
+        for e in batch["edges"]
+        if e["edge"]["edge_type"] == "USES_PANEL" and e["edge"]["from_entity_id"] == page["entity"]["entity_id"]
     }
+    return slots, hotlinks
+
+
+def _page(batch: dict[str, Any], slug: str) -> dict[str, Any]:
+    return next(n for n in batch["nodes"] if n["entity"]["entity_type"] == "page" and n["node"]["slug"] == slug)
+
+
+def test_the_landing_page_mounts_four_panels() -> None:
+    """Four, not three: coverage is here because a findings table alone cannot tell the truth."""
+    batch = _bundle()["batches"][0]
+
+    slots, hotlinks = _slots_and_wiring(batch, _page(batch, "/zizmor"))
 
     assert slots == hotlinks == {"about", "findings", "coverage", "runs"}
-    assert page["node"]["slug"] == "/zizmor"
+
+
+def test_every_seeded_page_has_all_of_its_slots_wired() -> None:
+    """Asserted for EVERY page, so it keeps holding as pages are added.
+
+    A USES_PANEL edge whose hotlink matches no slot renders nothing; a slot with no edge renders an
+    empty box. Both fail silently, so both are checked.
+    """
+    batch = _bundle()["batches"][0]
+    pages = [n for n in batch["nodes"] if n["entity"]["entity_type"] == "page"]
+    assert pages, "the bundle seeds no pages"
+
+    for page in pages:
+        slots, hotlinks = _slots_and_wiring(batch, page)
+        assert slots == hotlinks, f"{page['node']['slug']}: slots {slots} != wired panels {hotlinks}"
 
 
 def test_coverage_sits_with_the_findings_not_on_another_page() -> None:
