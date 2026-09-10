@@ -91,7 +91,7 @@ is real.
 | --- | --- | :---: | --- |
 | req-zizmor-binary | [The Pinned Binary](#the-pinned-binary) | Proposed | Exact PyPI pin; honest `[fips]` declaration; SBOM/alert channels named with their gaps |
 | req-zizmor-collector | [Offline Derived Collector](#offline-derived-collector) | Implemented | Materialize `raw_yaml` per repo → `zizmor --offline --format json-v1` → GRIFT batch |
-| req-zizmor-trigger | [Own Schedule, With A Staleness Guard](#own-schedule-with-a-staleness-guard) | Proposed | Seeded `schedule` node + boot-record first light; a run names the github_core collection it read and skips while one is active |
+| req-zizmor-trigger | [Own Schedule, With A Staleness Guard](#own-schedule-with-a-staleness-guard) | Implemented | Plugin-seeded `schedule` node fires `zizmor:zizmor` on its own cadence; a run names the github_core collection it read, and skips — creating no run node — while one is in flight |
 | req-zizmor-record | [The Corpus Proof](#the-corpus-proof) | Implemented | The suite seeds workflow rows in-transaction, fires the collector offline, and asserts against zizmor's own corpus; fixture data never ships or seeds a live grid (ruled 2026-09-10) |
 | req-zizmor-finding | [The Finding Node](#the-finding-node) | In Development | `zizmor__finding` with provenance fields; edges to run, workflow and job. A compliance-level node in disguise — see the implementation note |
 | req-zizmor-run | [Runs Are First-Class](#runs-are-first-class) | In Development | One `zizmor__run` per execution; findings and scanned workflows hang off it; unevaluated = not observed by this scanner |
@@ -227,11 +227,17 @@ RID: `req-zizmor-trigger`
 
 Status: `Proposed`
 
-The collector runs on its **own schedule**: this plugin's GRIFT seeds a tap_cares `schedule` node
-targeting `zizmor:zizmor` (default cron `23 */6 * * *`, off the hour; user-editable, since
-`Schedule` is user-creatable per `req-tap-cares-scheduler-model-6`). The boot record also carries a
-`fire-collector` step for `zizmor:zizmor` after `github_core:github_core`, so first light happens at
-boot. Because the schedule is independent of github_core's collection, the run guards its own
+The collector runs on its **own schedule**: this plugin's GRIFT
+(`tap_plugin/zizmor/grift/schedule.grift.json`, declared under `[grift]`) seeds a tap_cares
+`schedule` node targeting `zizmor:zizmor` (default cron `23 */6 * * *`, off the hour so it does not
+pile onto the top-of-hour scheduler tick; user-editable, since `Schedule` is user-creatable per
+`req-tap-cares-scheduler-model-6`).
+
+The schedule is owned by this plugin rather than by a consumer — a deliberate departure from the
+estate norm that the *consumer* declares a collector's schedule (samsite owns aws_core's,
+git-serious owns github_core's). The reason is that the finding set is a property of the scanner and
+its pin, not of any one product's page: a zizmor bump changes what is true here even when no
+workflow changed, and no consumer is positioned to know that. Because the schedule is independent of github_core's collection, the run guards its own
 freshness: it records the github_core `collection_job` (and batch) whose rows it read, and a fire
 that finds a github_core collection job active is finalized as *skipped* with that reason rather than
 scanning rows mid-write.
@@ -240,10 +246,10 @@ scanning rows mid-write.
 
 | ACID | Title | Status | Description | Notes |
 | --- | --- | :---: | --- | --- |
-| req-zizmor-trigger-1 | Seeded Schedule Fires | Proposed | After seeding, the schedule node exists with the default cron, and a tick at a matching slot creates a `ScheduleFire` that runs the collector. | |
-| req-zizmor-trigger-2 | Fires From The Record | Proposed | A boot record's `fire-collector` step for `zizmor:zizmor`, ordered after `github_core:github_core`, runs and reports counts in the boot record. | Tier-2 data order stays profile-explicit. |
-| req-zizmor-trigger-3 | Skips While Upstream Writes | Proposed | With a github_core collection job active, a scheduled fire finalizes as skipped naming that job; no run node is created. | |
-| req-zizmor-trigger-4 | Source Recorded | Proposed | Every run names the github_core collection job it read. | Provenance, not only timing. |
+| req-zizmor-trigger-1 | Seeded Schedule Fires | Implemented | After seeding, the schedule node exists with the default cron, and a tick at a matching slot creates a `ScheduleFire` that runs the collector. | |
+| req-zizmor-trigger-2 | Fires Unattended | Implemented | A scheduler tick at a matching slot produces a `ScheduleFire` (`TRIGGERED`), a `CollectionJob` that reaches `SUCCESSFUL`, and a run node carrying its counts — *observed* 2026-09-10: 155 findings from 77 evaluated workflows, outcome `ok`. | Re-scoped from the withdrawn corpus boot record (`req-zizmor-record`) to the schedule itself, which is what actually fires. A schedule that exists but has not been seen firing is a declaration that is false until proven. |
+| req-zizmor-trigger-3 | Skips While Upstream Writes | Implemented | With a github_core collection job active, a scheduled fire finalizes as skipped naming that job; no run node is created. | |
+| req-zizmor-trigger-4 | Source Recorded | Implemented | Every run names the github_core collection job it read. | Provenance, not only timing. |
 
 ### The Corpus Proof
 ----

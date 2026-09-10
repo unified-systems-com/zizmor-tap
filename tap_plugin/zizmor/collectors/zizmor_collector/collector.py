@@ -63,6 +63,7 @@ _SITE_COUNTS_MISMATCH = "2461"
 _SITE_SCRATCH_RESIDUE = "6f09"
 _SITE_RUN_FINISHED = "f9da"
 _SITE_NO_WORKFLOW_ENDPOINT = "807b"
+_SITE_UPSTREAM_ACTIVE = "a22a"
 
 EDGE_PRODUCED_FINDING = "PRODUCED_FINDING__zizmor"
 EDGE_SCANNED_WORKFLOW = "SCANNED_WORKFLOW__zizmor"
@@ -97,6 +98,27 @@ class ZizmorCollector(CollectorBase):
         except binary_mod.ZizmorBinaryError as exc:
             self._abort(_SITE_BINARY_ABORT, "BINARY_VERSION_ABORT", str(exc))
             raise  # pragma: no cover — _abort always raises; keeps the type checker honest.
+
+        # Staleness guard (req-zizmor-trigger-3). This collector runs on its OWN cadence, so a fire
+        # can land in the middle of a github_core collection. Reading workflow rows mid-write would
+        # produce a coverage number the run cannot stand behind: some repositories written, some
+        # not, and nothing on the finished run to say which. Skip, name the job, and create NO run
+        # node — deliberately not a run with `outcome="skipped"`, because a run node asserts a scan
+        # happened and this one never started. That outcome exists for the different case of a run
+        # that began and found nothing to do.
+        active = self._active_upstream_job()
+        if active is not None:
+            self.summary = (
+                f"Skipped: github_core collection job {active} is still running, and auditing rows "
+                "mid-write would report coverage this run cannot stand behind."
+            )
+            self.record_info(
+                _SITE_UPSTREAM_ACTIVE,
+                "UPSTREAM_COLLECTION_ACTIVE",
+                self.summary,
+                message_data={"github_core_collection_job": active},
+            )
+            return
 
         source_job = self._latest_upstream_job()
         if source_job is None:
@@ -604,12 +626,12 @@ class ZizmorCollector(CollectorBase):
     # ------------------------------------------------------------------
 
     @staticmethod
-    def _latest_upstream_job() -> str | None:
-        """The most recent SUCCESSFUL github_core collection job on this grid.
+    def _upstream_job_ids() -> list[Any]:
+        """Entity ids of every collection job belonging to the upstream github_core collector.
 
-        The run records it as provenance: which collection's rows these findings were derived from
-        (req-zizmor-trigger-4). Matched on the collector's derived entity id so a display-name
-        change cannot break the link.
+        Matched on the collector's DERIVED entity id (`uuid5(NAMESPACE_COLLECTOR, "scope:key")`) so a
+        display-name change cannot break the link. Derived once and shared by both callers below,
+        rather than the same join written twice.
         """
         import uuid as uuid_module
 
@@ -617,11 +639,40 @@ class ZizmorCollector(CollectorBase):
         from tap_grid.models import Edge
 
         collector_uuid = uuid_module.uuid5(NAMESPACE_COLLECTOR, _UPSTREAM_COLLECTOR_KEY)
-        job_ids = Edge.objects.filter(from_entity_id=collector_uuid, edge_type="HAS_COLLECTION_JOB").values_list(
-            "to_entity_id", flat=True
+        return list(
+            Edge.objects.filter(from_entity_id=collector_uuid, edge_type="HAS_COLLECTION_JOB").values_list(
+                "to_entity_id", flat=True
+            )
         )
+
+    @classmethod
+    def _active_upstream_job(cls) -> str | None:
+        """The github_core collection job currently in flight, if there is one.
+
+        The question is "is a collection writing right now", not "how old is the last one": reading
+        rows mid-write is the failure this guards, while a stale-but-quiet grid is perfectly safe to
+        audit. READY counts as in flight — the job row exists and its task is queued, so rows may
+        start landing at any moment.
+        """
         job = (
-            CollectionJob.objects.filter(entity_id__in=list(job_ids), status=CollectionJobStatus.SUCCESSFUL)
+            CollectionJob.objects.filter(
+                entity_id__in=cls._upstream_job_ids(),
+                status__in=(CollectionJobStatus.RUNNING, CollectionJobStatus.READY),
+            )
+            .order_by("-started_at", "-entity_id")
+            .first()
+        )
+        return str(job.entity_id) if job is not None else None
+
+    @classmethod
+    def _latest_upstream_job(cls) -> str | None:
+        """The most recent SUCCESSFUL github_core collection job on this grid.
+
+        The run records it as provenance: which collection's rows these findings were derived from
+        (req-zizmor-trigger-4).
+        """
+        job = (
+            CollectionJob.objects.filter(entity_id__in=cls._upstream_job_ids(), status=CollectionJobStatus.SUCCESSFUL)
             .order_by("-finished_at", "-entity_id")
             .first()
         )
