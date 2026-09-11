@@ -45,7 +45,7 @@ logger = logging.getLogger(__name__)
 DEFAULT_WORKFLOW_VAR = "workflow_id"
 EDGE_FLAGS_WORKFLOW = "FLAGS_WORKFLOW__zizmor"
 EDGE_SCANNED_WORKFLOW = "SCANNED_WORKFLOW__zizmor"
-FINDING_PAGE = "/zizmor/finding?finding_id={finding_id}"
+FINDING_PAGE = "/zizmor/finding?finding_id={finding_id}&workflow_id={workflow_id}"
 
 
 class ZizmorWorkflowSourcePanelType:
@@ -75,7 +75,7 @@ class ZizmorWorkflowSourcePanelType:
         findings = cls._findings(workflow)
         scan = cls._scan(workflow)
         lines = workflow_body_lines(workflow)
-        annotated = annotate(lines, findings)
+        annotated = annotate(lines, findings, workflow_id=workflow.workflow_id)
         return {
             "state": "found",
             "requested": requested,
@@ -127,7 +127,7 @@ class ZizmorWorkflowSourcePanelType:
         }
 
 
-def annotate(lines: list[str], findings: list[ZizmorFinding]) -> dict[str, Any]:
+def annotate(lines: list[str], findings: list[ZizmorFinding], workflow_id: int | str = "") -> dict[str, Any]:
     """Lay the findings over the lines: marked spans, and one margin call-out per starting line.
 
     Returns `rows` (one per source line: number, text, tone of the loudest finding covering it, and
@@ -154,7 +154,7 @@ def annotate(lines: list[str], findings: list[ZizmorFinding]) -> dict[str, Any]:
             "summary": f.summary or f.audit_id,
             "job_key": loc.get("job_key") or "",
             "span": f"{start}–{end}" if end != start else str(start),
-            "url": FINDING_PAGE.format(finding_id=f.entity_id),
+            "url": FINDING_PAGE.format(finding_id=f.entity_id, workflow_id=workflow_id),
         }
         by_start.setdefault(start, []).append(item)
         for i in range(start, end + 1):

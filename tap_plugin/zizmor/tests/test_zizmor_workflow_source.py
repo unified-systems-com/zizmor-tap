@@ -126,7 +126,7 @@ def test_every_finding_is_marked_and_called_out_with_a_link_to_itself(db: None) 
     assert [r["tone"] for r in rows[2:5]] == ["bad", "bad", "bad"]  # the High span wins lines 3-5
     assert rows[11]["tone"] == "muted" and rows[0]["tone"] == ""
     links = {it["url"] for c_ in ctx["callouts"] for it in c_["items"]}
-    assert links == {f"/zizmor/finding?finding_id={x}" for x in (a, b, c)}
+    assert links == {f"/zizmor/finding?finding_id={x}&workflow_id=101" for x in (a, b, c)}  # the finding page seats the workflow graph
     # findings starting on one line share one block; numbering is continuous across blocks
     assert [c_["line"] for c_ in ctx["callouts"]] == [3, 12]
     assert [it["n"] for c_ in ctx["callouts"] for it in c_["items"]] == [1, 2, 3]
@@ -220,4 +220,4 @@ def test_a_finding_past_the_collected_body_is_listed_not_dropped() -> None:
     out = annotate(["one", "two", "three"], [F()])
     assert all(r["callout"] is None for r in out["rows"])  # nothing to hang it on
     assert [c["line"] for c in out["beyond"]] == [41]
-    assert out["beyond"][0]["items"][0]["url"].endswith(str(F.entity_id))
+    assert f"finding_id={F.entity_id}" in out["beyond"][0]["items"][0]["url"]

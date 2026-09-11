@@ -111,10 +111,17 @@ class ZizmorFindingDetailPanelType:
 
         location = finding.location or {}
         tags = finding.tags or {}
+        # `section`: "all" (default) renders the whole page in one mount; "head" renders the title,
+        # verdict and subject block; "body" the rest — so a consumer page can seat another panel
+        # (github_core's anatomy graph of the workflow) between them (req-zizmor-page-finding-3).
+        section = str((getattr(panel, "config", None) or {}).get("section") or "all")
 
         return {
             "finding": finding,
             "state": "found",
+            "section": section,
+            "show_head": section in ("all", "head"),
+            "show_body": section in ("all", "body"),
             "requested": requested,
             "location": location,
             "tags": tags,

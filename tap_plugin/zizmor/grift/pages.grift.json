@@ -6,15 +6,15 @@
   "batches": [
     {
       "batch_entity": {
-        "entity_id": "01a08dd0-ed1c-7479-8c9b-e1c04a9ca5e8",
+        "entity_id": "01a08ded-2e43-7366-8abd-50e67f74d54d",
         "entity_type": "batch",
-        "name": "zizmor Pages v0.5.0",
+        "name": "zizmor Pages v0.6.0",
         "dimensions": {}
       },
       "batch_node": {
         "source": "plugins.zizmor.grift.pages",
-        "name": "zizmor Pages v0.5.0",
-        "description": "Seeds /zizmor (about, findings, coverage, runs) and /zizmor/finding — one finding in full, reached from any audit cell on the findings table. See req-zizmor-page-landing and req-zizmor-page-finding. v0.3.0 (zizmor-tap#31): the findings table's badges actually render — tone maps for severity and confidence (Low only), datetime formatters on both timestamps, the stray column-level capitalize gone; /zizmor/finding leaves the navigation (it needs ?finding_id=); the finding-detail panel gains workflow_page_template, /github_core/workflow?workflow_id={workflow_id}, the key that page takes since tap-plugin-github-core#101. Panel and page node upserts; every id stable, batch id moved. v0.4.0 (zizmor-tap#33): the workflow page — /zizmor/workflow?workflow_id=… — one file, every finding on it: the annotated source with call-outs in the right margin (zizmor-workflow-source), then the same findings as a table over a per-workflow search (envelope mode, workflow_id typed integer). Not discoverable. One page, two panels, one search, three edges; every prior id stable. v0.5.0 (George): the workflow page is the annotated source alone — the findings table beneath it repeated the margin; the per-workflow search stays for consumers to bind. Panel node dropped from the bundle (an operator deletes it on a grid that has it; a shipped bundle cannot say 'gone'). Also v0.5.0: the workflow page carries github_core's anatomy graph beneath the file (edge to github_core's panel); the landing findings table's rows open the finding, its Workflow column opens the annotated file (via location.workflow_id, recorded by the collector from this version on) and a Repository column is added."
+        "name": "zizmor Pages v0.6.0",
+        "description": "Seeds /zizmor (about, findings, coverage, runs) and /zizmor/finding — one finding in full, reached from any audit cell on the findings table. See req-zizmor-page-landing and req-zizmor-page-finding. v0.3.0 (zizmor-tap#31): the findings table's badges actually render — tone maps for severity and confidence (Low only), datetime formatters on both timestamps, the stray column-level capitalize gone; /zizmor/finding leaves the navigation (it needs ?finding_id=); the finding-detail panel gains workflow_page_template, /github_core/workflow?workflow_id={workflow_id}, the key that page takes since tap-plugin-github-core#101. Panel and page node upserts; every id stable, batch id moved. v0.4.0 (zizmor-tap#33): the workflow page — /zizmor/workflow?workflow_id=… — one file, every finding on it: the annotated source with call-outs in the right margin (zizmor-workflow-source), then the same findings as a table over a per-workflow search (envelope mode, workflow_id typed integer). Not discoverable. One page, two panels, one search, three edges; every prior id stable. v0.5.0 (George): the workflow page is the annotated source alone — the findings table beneath it repeated the margin; the per-workflow search stays for consumers to bind. Panel node dropped from the bundle (an operator deletes it on a grid that has it; a shipped bundle cannot say 'gone'). Also v0.5.0: the workflow page carries github_core's anatomy graph beneath the file (edge to github_core's panel); the landing findings table's rows open the finding, its Workflow column opens the annotated file (via location.workflow_id, recorded by the collector from this version on) and a Repository column is added. v0.6.0: the finding page is three mounts — head, github_core's anatomy graph, body — and takes ?workflow_id= too; the landing table's links into it carry it."
       },
       "nodes": [
         {
@@ -104,7 +104,7 @@
                   "header_tooltip": "zizmor's own name for the rule that fired. Click through for the finding in full — where it is, what the job it sits in is permitted to do, and how long it has been there.",
                   "formatter": "link",
                   "formatter_params": {
-                    "href_template": "/zizmor/finding?finding_id={data.entity_id}"
+                    "href_template": "/zizmor/finding?finding_id={data.entity_id}&workflow_id={data.location.workflow_id}"
                   }
                 },
                 {
@@ -195,7 +195,7 @@
                   "formatter": "datetime"
                 }
               ],
-              "row_url_template": "/zizmor/finding?finding_id={entity_id}"
+              "row_url_template": "/zizmor/finding?finding_id={entity_id}&workflow_id={data.location.workflow_id}"
             }
           }
         },
@@ -367,7 +367,15 @@
                 "col-1": {
                   "width": "1fr",
                   "rows": {
-                    "row-1-detail": {
+                    "row-1-head": {
+                      "panel-id": "head",
+                      "height": "auto"
+                    },
+                    "row-2-anatomy": {
+                      "panel-id": "anatomy",
+                      "height": "50vh"
+                    },
+                    "row-3-detail": {
                       "panel-id": "detail",
                       "height": "auto"
                     }
@@ -376,7 +384,7 @@
               }
             },
             "discoverable": false,
-            "description": "Not discoverable: it needs ?finding_id= and has nothing to show without one, so it is reached from the findings table, never from the menu."
+            "description": "Not discoverable: it needs ?finding_id= and has nothing to show without one, so it is reached from the findings table, never from the menu. v0.6.0 (George): github_core's anatomy graph of the finding's workflow sits between the finding's head and its body — the same panel entity /zizmor/workflow mounts, by edge — so the page also takes ?workflow_id=, which every link into it now carries."
           }
         },
         {
@@ -395,7 +403,8 @@
             "editor_view": "",
             "config": {
               "hide_header": true,
-              "workflow_page_template": "/github_core/workflow?workflow_id={workflow_id}"
+              "workflow_page_template": "/github_core/workflow?workflow_id={workflow_id}",
+              "section": "body"
             }
           }
         },
@@ -489,6 +498,28 @@
               "additionalProperties": false
             },
             "max_limit": 1000
+          }
+        },
+        {
+          "entity": {
+            "entity_id": "01a08ded-2e43-7366-8abd-50e7f1cbc6a1",
+            "entity_type": "panel",
+            "name": "Finding (head)",
+            "dimensions": {
+              "tap.graph": "web"
+            }
+          },
+          "node": {
+            "slug": "zizmor-finding-head",
+            "name": "Finding (head)",
+            "view": "zizmor/panels/finding_detail.html",
+            "editor_view": "",
+            "description": "The finding's title, verdict badges and subject block — the same panel type as the detail, rendering only its head, so the workflow's anatomy graph can sit between head and body.",
+            "config": {
+              "hide_header": true,
+              "section": "head",
+              "workflow_page_template": "/github_core/workflow?workflow_id={workflow_id}"
+            }
           }
         }
       ],
@@ -650,6 +681,46 @@
           },
           "edge": {
             "from_entity_id": "01a08db6-4016-7590-b5cc-020c50cdd636",
+            "to_entity_id": "01a0887c-31bf-7584-9d80-739c3b9cc7cb",
+            "edge_type": "USES_PANEL",
+            "properties": {
+              "hotlink": {
+                "model": "page",
+                "spec": "page-panels",
+                "value": "anatomy"
+              }
+            }
+          }
+        },
+        {
+          "entity": {
+            "entity_id": "01a08ded-2e43-7366-8abd-50e87a3465ce",
+            "entity_type": "edge",
+            "name": "Finding page USES_PANEL Finding (head)",
+            "dimensions": {}
+          },
+          "edge": {
+            "from_entity_id": "01a08cf7-e07f-728e-9cc3-c0c1283905e6",
+            "to_entity_id": "01a08ded-2e43-7366-8abd-50e7f1cbc6a1",
+            "edge_type": "USES_PANEL",
+            "properties": {
+              "hotlink": {
+                "model": "page",
+                "spec": "page-panels",
+                "value": "head"
+              }
+            }
+          }
+        },
+        {
+          "entity": {
+            "entity_id": "01a08ded-2e43-7366-8abd-50e9193f9859",
+            "entity_type": "edge",
+            "name": "Finding page USES_PANEL github_core anatomy (out-of-bundle: github_core workflow-page)",
+            "dimensions": {}
+          },
+          "edge": {
+            "from_entity_id": "01a08cf7-e07f-728e-9cc3-c0c1283905e6",
             "to_entity_id": "01a0887c-31bf-7584-9d80-739c3b9cc7cb",
             "edge_type": "USES_PANEL",
             "properties": {

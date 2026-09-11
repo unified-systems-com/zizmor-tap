@@ -451,6 +451,7 @@ nothing in it.
 | ACID | Title | Status | Description | Notes |
 | --- | --- | :---: | --- | --- |
 | req-zizmor-page-finding-1 | Resolves The Finding | Implemented | With a valid `finding_id` the detail panel renders that finding; with an unknown id the page says so. | |
+| req-zizmor-page-finding-3 | The Workflow's Anatomy, Between Head And Body | Implemented | The page is three mounts: the finding's head (title, verdict, subject), github_core's anatomy graph of the finding's workflow (that plugin's panel, by edge), and the finding's body. The graph reads `?workflow_id=`, so the page takes it beside `finding_id` and every link into the page carries both; a link without it renders the graph's own no-input state, never a wrong workflow. | George, 2026-09-10. `panel.config.section` = head / body / all on `zizmor-finding-detail` |
 | req-zizmor-page-finding-2 | Links Out | Implemented | The workflow, job (when resolved) and run links resolve to their pages. The workflow link is built from `panel.config.workflow_page_template` (`{full_name}` / `{path}` / `{workflow_id}` placeholders; the instance names the page) and rendered ONLY when that Page exists on the grid — never a dead link. | zizmor-tap#31; the shipped instance template is `/github_core/workflow?workflow_id={workflow_id}` |
 
 ### Page: Workflow

@@ -260,3 +260,24 @@ def test_the_scanners_verbatim_assertion_is_carried_through(db: None) -> None:
     raw = {"ident": "template-injection", "determinations": {"severity": "High"}}
 
     assert _ctx(_finding(raw=raw))["finding"].raw == raw
+
+
+def test_section_config_splits_head_from_body(db: None) -> None:
+    """req-zizmor-page-finding-3: the same panel type renders its head, its body, or both."""
+    from tap_plugin.zizmor.panels.finding_detail import ZizmorFindingDetailPanelType
+
+    class _Req:
+        def __init__(self, **params: str) -> None:
+            self.GET = params
+
+    class _Panel:
+        def __init__(self, **config: str) -> None:
+            self.config = config
+
+    fid = _finding().entity_id
+    head = ZizmorFindingDetailPanelType.get_view_context(_Panel(section="head"), _Req(finding_id=str(fid)))
+    body = ZizmorFindingDetailPanelType.get_view_context(_Panel(section="body"), _Req(finding_id=str(fid)))
+    both = ZizmorFindingDetailPanelType.get_view_context(_Panel(), _Req(finding_id=str(fid)))
+    assert (head["show_head"], head["show_body"]) == (True, False)
+    assert (body["show_head"], body["show_body"]) == (False, True)
+    assert (both["show_head"], both["show_body"]) == (True, True)
