@@ -98,7 +98,7 @@ is real.
 | req-zizmor-page-landing | [Page: Landing](#page-landing) | Implemented | `/zizmor` — about, findings table, runs table; every cell drills in |
 | req-zizmor-page-run | [Page: Run](#page-run) | Proposed | `/zizmor/runs/<run_id>` — summary + detail of one run |
 | req-zizmor-page-finding | [Page: Finding](#page-finding) | Implemented | `/zizmor/finding?finding_id=<id>` — one finding in full, joined to its job, action and run |
-| req-zizmor-page-workflow | [Page: Workflow](#page-workflow) | Implemented | `/zizmor/workflow?workflow_id=<n>` — one file, every finding on it: annotated source, then the findings table |
+| req-zizmor-page-workflow | [Page: Workflow](#page-workflow) | Implemented | `/zizmor/workflow?workflow_id=<n>` — one file, every finding on it, as annotated source with margin call-outs |
 | req-zizmor-panel-coverage | [Panel: Coverage](#panel-coverage) | Implemented | What the latest run read and what it never did; the panel that stops a findings list reading as safety |
 | req-zizmor-panel-about | [Panel: About](#panel-about) | Implemented | What zizmor is; version observed from the binary; persona; offline posture and skipped audits |
 | req-zizmor-panel-findings-table | [Panel: Findings Table](#panel-findings-table) | Implemented | Latest run's findings with not-observed rows; filter by audit and severity; cells drill in |
@@ -461,11 +461,13 @@ Status: `Implemented`
 
 `/zizmor/workflow?workflow_id=<GitHub numeric workflow id>` — one workflow file and every finding on it
 (George, 2026-09-10: "a consolidated workflow page which shows all the issues associated with a single
-file"). Two slots, top to bottom: `source` mounts `zizmor-workflow-source`
-(`req-zizmor-panel-workflow-source`); `findings` mounts a standard table over the search *zizmor
-Findings on one workflow* — `finding —FLAGS_WORKFLOW→ workflow WHERE workflow_id = $workflow_id`,
-envelope mode, `workflow_id` typed `integer`, no `ORDER BY` (refused on a traversal) — with
-`row_url_template` to the finding. Keyed by `workflow_id` because that is the one value every node
+file"). Two slots: `source`, mounting `zizmor-workflow-source` (`req-zizmor-panel-workflow-source`), and
+`anatomy`, mounting **github_core's** `github-workflow-anatomy` panel by `USES_PANEL` edge — the jobs of the
+same workflow, drawn by the plugin that owns them, never copied — which is why github_core's
+`workflow-page` bundle must seed before zizmor's (zizmor's ci record does; consuming records do). A
+findings table beneath it was built and dropped the same evening (George: it repeated the margin); the
+search it was bound to, *zizmor Findings on one workflow*, stays in the bundle for consumers to bind — `finding —FLAGS_WORKFLOW→ workflow WHERE workflow_id = $workflow_id`,
+(envelope mode, `workflow_id` typed `integer`, no `ORDER BY` — refused on a traversal). Keyed by `workflow_id` because that is the one value every node
 that reaches a workflow carries (workflow, job, run) and the key github_core's own workflow page takes
 (tap-plugin-github-core#102); not discoverable, since from the menu it has nothing to show.
 
@@ -478,8 +480,8 @@ its `workflow_id` (zizmor-tap#30). The page links out to the workflow's own page
 
 | ACID | Title | Status | Description | Notes |
 | --- | --- | :---: | --- | --- |
-| req-zizmor-page-workflow-1 | Two Slots Wired | Implemented | The page mounts the annotated source and the per-workflow findings table; the table's search takes `workflow_id` as its one required integer input and returns nodes. | `tests/test_zizmor_pages.py::test_every_seeded_page_has_all_of_its_slots_wired`, `::test_the_searches_return_a_node_not_a_projection` |
-| req-zizmor-page-workflow-2 | Same Findings Twice, Derived Once | Implemented | The margin call-outs and the table rows are the same set: both read `FLAGS_WORKFLOW` edges to this workflow. | The panel's `_findings` and the search share the edge, not a copy of a list |
+| req-zizmor-page-workflow-1 | Slot Wired, Search Shipped | Implemented | The page mounts the annotated source; the per-workflow search takes `workflow_id` as its one required integer input and returns nodes. | `tests/test_zizmor_pages.py::test_every_seeded_page_has_all_of_its_slots_wired`, `::test_the_searches_return_a_node_not_a_projection` |
+| req-zizmor-page-workflow-2 | Lines Are Lines | Implemented | Every line the page names or marks is the file's 1-based line: zizmor's 0-based `row` is converted once (`panels/_workflow.py::line_of`, zizmor-tap#35) for the finding page, its source view and the margin alike. | 8 of 8 sampled snippets matched at row + 1, none at row |
 
 ### Panel: About
 ----

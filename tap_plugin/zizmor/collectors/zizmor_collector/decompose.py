@@ -198,8 +198,16 @@ def _enum_or_unknown(value: Any, allowed: frozenset[str], *, default: str) -> st
     return value if isinstance(value, str) and value in allowed else default
 
 
-def decompose(finding: dict[str, Any], *, workflow_path: str) -> DecomposedFinding:
-    """Reduce one json-v1 finding to stored fields plus its endpoint claims."""
+def decompose(
+    finding: dict[str, Any], *, workflow_path: str, full_name: str = "", workflow_id: int | None = None
+) -> DecomposedFinding:
+    """Reduce one json-v1 finding to stored fields plus its endpoint claims.
+
+    `full_name` and `workflow_id` are copied onto the location from the workflow row the collector
+    is scanning — the same denormalisation github_core makes onto jobs and runs — so a table over
+    findings can name the repository and link to the workflow without a traversal (zizmor-tap#30).
+    Display fields only: a finding's identity is (workflow, audit, route, persona, fragment).
+    """
     location = primary_location(finding)
     route = _route_elements(location)
     symbolic = location.get("symbolic") or {}
@@ -230,6 +238,8 @@ def decompose(finding: dict[str, Any], *, workflow_path: str) -> DecomposedFindi
             # The workflow path as the GRID knows it, not as the scanner rendered it: the scratch
             # tree's layout is an implementation detail of this run and must not leak onto a node.
             "path": workflow_path,
+            "full_name": full_name or None,
+            "workflow_id": workflow_id,
             "route": render_route(route),
             "job_key": job_key_from_route(route),
             "step_index": step_index_from_route(route),

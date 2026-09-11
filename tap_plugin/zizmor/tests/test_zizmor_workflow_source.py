@@ -114,9 +114,10 @@ def _ctx(workflow_id: int | str, config: dict[str, Any] | None = None) -> dict[s
 def test_every_finding_is_marked_and_called_out_with_a_link_to_itself(db: None) -> None:
     wf, run = _workflow(101), _run()
     _edge(SCANNED, run.entity_id, wf, {"outcome": "evaluated"})
-    a = _finding(wf, run, "template-injection", "High", 3, 5)
-    b = _finding(wf, run, "excessive-permissions", "Medium", 3)
-    c = _finding(wf, run, "unpinned-uses", "Low", 12)
+    # zizmor rows are 0-based: row 2 is line 3 (zizmor-tap#35)
+    a = _finding(wf, run, "template-injection", "High", 2, 4)
+    b = _finding(wf, run, "excessive-permissions", "Medium", 2)
+    c = _finding(wf, run, "unpinned-uses", "Low", 11)
     ctx = _ctx(101)
     assert ctx["state"] == "found" and ctx["scan"]["outcome"] == "evaluated"
     assert ctx["finding_count"] == 3 and ctx["loud_count"] == 2
@@ -139,7 +140,7 @@ def test_callout_blocks_reserve_disjoint_margin_rows() -> None:
             self.location = {"row": row, "end_row": end}
 
     out = annotate(
-        [f"l{i}" for i in range(1, 31)], [F(2, 2, "High", "a"), F(3, 3, "Low", "b"), F(20, 25, "Medium", "c")]
+        [f"l{i}" for i in range(1, 31)], [F(1, 1, "High", "a"), F(2, 2, "Low", "b"), F(19, 24, "Medium", "c")]
     )
     spans = [(c["grid_start"], c["grid_end"]) for c in out["callouts"]]
     assert spans == [(2, 3), (3, 20), (20, 31)]
@@ -165,7 +166,7 @@ def test_never_scanned_is_its_own_state(db: None) -> None:
 def test_findings_with_no_body_are_listed_not_hung_on_a_missing_file(db: None) -> None:
     wf, run = _workflow(404, body=None), _run()
     _edge(SCANNED, run.entity_id, wf, {"outcome": "evaluated"})
-    _finding(wf, run, "dangerous-triggers", "High", 7)
+    _finding(wf, run, "dangerous-triggers", "High", 6)
     ctx = _ctx(404)
     assert ctx["has_body"] is False and ctx["rows"] == []
     assert [it["audit_id"] for c_ in ctx["callouts"] for it in c_["items"]] == ["dangerous-triggers"]
@@ -199,3 +200,13 @@ def test_workflow_page_link_only_when_that_page_exists(db: None) -> None:
     )
     assert _ctx(505, cfg)["workflow_url"] == "/github_core/workflow?workflow_id=505"
     assert wf is not None
+
+
+def test_a_row_of_zero_is_line_one_not_nothing() -> None:
+    class F:
+        entity_id, audit_id, severity, summary = uuid.uuid7(), "dangerous-triggers", "High", "on: pull_request_target"
+        location = {"row": 0, "end_row": 0}
+
+    out = annotate(["on:", "  pull_request_target:"], [F()])
+    assert out["rows"][0]["tone"] == "bad" and out["rows"][1]["tone"] == ""
+    assert out["callouts"][0]["line"] == 1 and out["callouts"][0]["items"][0]["span"] == "1"

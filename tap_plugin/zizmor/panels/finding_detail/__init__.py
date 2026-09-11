@@ -46,6 +46,7 @@ DEFAULT_FINDING_VAR = "finding_id"
 
 from tap_plugin.zizmor.panels._workflow import (  # noqa: E402 — derived once for every zizmor panel
     file_page_url,
+    line_of,
     workflow_body_lines,
     workflow_page_url,
 )
@@ -67,8 +68,8 @@ def _where(location: dict[str, Any], job_key: str) -> str:
     page printed all three as separate rows ("Job: this is not about a job", "Route: (workflow
     level)", "Line: 1:0"), which is three ways of saying the same nothing. Say it once.
     """
-    row = location.get("row")
-    end = location.get("end_row")
+    row = line_of(location.get("row"))
+    end = line_of(location.get("end_row")) or row
     route = location.get("route") or ""
     if not job_key and not route:
         return f"the whole file, lines {row}\u2013{end}" if row and end and end != row else "the whole file"
@@ -154,8 +155,8 @@ class ZizmorFindingDetailPanelType:
         span instead of making the reader imagine what is around it. Three states, not two: a
         workflow with no collected body says so rather than rendering an empty box.
         """
-        start = location.get("row") or 0
-        end = location.get("end_row") or start
+        start = line_of(location.get("row"))
+        end = line_of(location.get("end_row")) or start
         body_lines = workflow_body_lines(workflow)
         if body_lines:
             return {

@@ -26,6 +26,7 @@ from tap_plugin.github_core.models.github_workflow import GithubWorkflow
 from tap_plugin.zizmor.models.finding import ZizmorFinding
 from tap_plugin.zizmor.models.run import ZizmorRun
 from tap_plugin.zizmor.panels._workflow import (
+    line_of,
     severity_rank,
     severity_tone,
     workflow_body_lines,
@@ -96,7 +97,7 @@ class ZizmorWorkflowSourcePanelType:
         )
         rows = list(ZizmorFinding.objects.filter(entity_id__in=list(ids)))
         # By position in the file, loudest first within a line — the order the margin reads in.
-        rows.sort(key=lambda f: ((f.location or {}).get("row") or 0, severity_rank(f.severity), f.audit_id))
+        rows.sort(key=lambda f: (line_of((f.location or {}).get("row")), severity_rank(f.severity), f.audit_id))
         return rows
 
     @staticmethod
@@ -140,8 +141,8 @@ def annotate(lines: list[str], findings: list[ZizmorFinding]) -> dict[str, Any]:
     number = 0
     for f in findings:
         loc = f.location or {}
-        start = int(loc.get("row") or 0) or 1
-        end = int(loc.get("end_row") or start) or start
+        start = line_of(loc.get("row")) or 1
+        end = line_of(loc.get("end_row")) or start
         number += 1
         item = {
             "n": number,

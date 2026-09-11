@@ -35,6 +35,22 @@ SEVERITY_TONE = {"High": "bad", "Medium": "warn", "Low": "muted", "Informational
 SEVERITY_RANK = {"High": 0, "Medium": 1, "Low": 2, "Informational": 3}
 
 
+def line_of(row: object) -> int:
+    """The 1-based line a stored `location.row` / `end_row` denotes.
+
+    zizmor's rows come from tree-sitter points, which count from 0 — the finding that reads
+    `row: 39` sits on line 40 of the file. Verified against collected bodies on 2026-09-10 (8 of 8
+    snippets matched at row + 1, none at row; zizmor-tap#35). Every surface that names a line or
+    marks one derives it here, so the convention is decided once. A missing or unparsable row is 0:
+    "no line", which callers render as such rather than as line 1.
+    """
+    try:
+        n = int(row)  # type: ignore[arg-type]
+    except TypeError, ValueError:
+        return 0
+    return n + 1 if n >= 0 else 0
+
+
 def severity_tone(severity: str) -> str:
     return SEVERITY_TONE.get(severity or "", "muted")
 

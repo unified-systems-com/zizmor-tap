@@ -365,7 +365,7 @@
 /* SOURCE — the whole workflow, numbered, with the flagged span marked and scrolled into view.
    No syntax-highlighting library: numbering is a table column, the mark is a class, and opening
    at the finding is one scrollTop. A highlighter would be the only reason to add a dependency. */
-.tap-zizmor-src { max-height: 26rem; overflow: auto; border: 1px solid rgba(128,128,128,.22); border-radius: 3px; }
+.tap-zizmor-src { max-height: 26rem; overflow: auto; border: 1px solid rgba(128,128,128,.22); border-radius: 3px; background: rgba(255, 255, 255, .55); }
 .tap-zizmor-src__cap { font-size: .82rem; opacity: .66; margin: .5rem 0 .35rem; }
 .tap-zizmor-src__t { width: 100%; border-collapse: collapse; font-size: .82rem; line-height: 1.5; }
 .tap-zizmor-src__n { width: 3.2rem; text-align: right; padding: 0 .7rem 0 .5rem; user-select: none;
@@ -391,6 +391,7 @@
     column-gap: 0; align-items: start;
     font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .8rem; line-height: 1.5rem;
     border: 1px solid rgba(128,128,128,.22); border-radius: 3px; overflow: auto; max-height: 72vh;
+    background: rgba(255, 255, 255, .55);  /* a shade off the canvas, so the file reads as a sheet */
 }
 .tap-zizmor-annot__n { grid-column: 1; text-align: right; padding: 0 .35rem 0 .4rem; user-select: none; opacity: .45; white-space: nowrap; }
 .tap-zizmor-annot__c { grid-column: 2; white-space: pre; padding: 0 .75rem 0 .5rem; background: none; border: 0; font-size: inherit; min-height: 1.5rem; }
