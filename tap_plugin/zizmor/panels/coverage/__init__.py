@@ -103,9 +103,12 @@ class ZizmorCoveragePanelType:
             # A reason identical on every row of a bucket is a property of the OUTCOME, not of the
             # workflow. Printed per row it filled the widest column with the same sentence forty
             # times and said nothing; hoisted to the group it is said once and read once.
-            distinct = {r["reason"] for r in bucket if r["reason"]}
-            if len(distinct) == 1 and len(bucket) > 1:
-                shared[key] = distinct.pop()
+            reasons = [r["reason"] for r in bucket]
+            # Hoist only when EVERY row carries the same non-empty reason; a bucket with one blank
+            # must not have the others' reason attributed to it (the collector writes a reason on
+            # every non-evaluated edge, but the panel stays honest without leaning on that).
+            if len(bucket) > 1 and all(reasons) and len(set(reasons)) == 1:
+                shared[key] = reasons[0]
             for r in bucket:
                 reason = "" if key in shared else r["reason"]
                 rows.append({**r, "reason": reason, "outcome": key, "label": meta["label"], "tone": meta["tone"]})

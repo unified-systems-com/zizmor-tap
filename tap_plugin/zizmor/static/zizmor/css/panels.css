@@ -418,3 +418,5 @@
     .tap-zizmor-annot__grid { grid-template-columns: 3rem minmax(0, 1fr); }
     .tap-zizmor-annot__note { grid-column: 2; grid-row: auto !important; margin: .2rem .5rem .5rem 3.5rem; }
 }
+/* Present for assistive tech and the table's own semantics; not part of the picture. */
+.tap-zizmor-visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap; }
