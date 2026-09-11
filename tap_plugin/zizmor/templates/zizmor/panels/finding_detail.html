@@ -126,6 +126,7 @@
             </p>
             <div class="tap-zizmor-src">
                 <table class="tap-zizmor-src__t">
+                    <thead class="tap-zizmor-visually-hidden"><tr><th scope="col">Line</th><th scope="col">Source</th></tr></thead>
                     <tbody>
                         {% for line in source.lines %}
                         <tr class="tap-zizmor-src__l{% if line.hit %} tap-zizmor-src__l--hit{% endif %}"{% if line.hit %} data-hit="1"{% endif %}>

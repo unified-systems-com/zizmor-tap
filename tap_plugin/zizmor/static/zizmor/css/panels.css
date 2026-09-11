@@ -374,3 +374,6 @@
 .tap-zizmor-src__c code { font-size: inherit; background: none; border: 0; padding: 0; }
 .tap-zizmor-src__l--hit { background: rgba(161, 92, 0, .13); }
 .tap-zizmor-src__l--hit .tap-zizmor-src__n { opacity: .8; font-weight: 600; box-shadow: inset 3px 0 0 #a15c00; }
+
+/* Present for assistive tech and the table's own semantics; not part of the picture. */
+.tap-zizmor-visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap; }
