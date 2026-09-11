@@ -236,10 +236,10 @@ class ZizmorFindingDetailPanelType:
             "same_audit": 0,
             "same_audit_files": 0,
         }
-        sibling_ids = list(ZizmorFinding.objects.filter(audit_id=finding.audit_id).values_list("entity_id", flat=True))
-        out["same_audit"] = len(sibling_ids)
+        siblings = ZizmorFinding.objects.filter(audit_id=finding.audit_id)
+        out["same_audit"] = siblings.count()
         out["same_audit_files"] = (
-            Edge.objects.filter(from_entity_id__in=sibling_ids, edge_type=EDGE_FLAGS_WORKFLOW)
+            Edge.objects.filter(from_entity_id__in=siblings.values("entity_id"), edge_type=EDGE_FLAGS_WORKFLOW)
             .values("to_entity_id")
             .distinct()
             .count()
