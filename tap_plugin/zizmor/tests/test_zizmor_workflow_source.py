@@ -210,3 +210,14 @@ def test_a_row_of_zero_is_line_one_not_nothing() -> None:
     out = annotate(["on:", "  pull_request_target:"], [F()])
     assert out["rows"][0]["tone"] == "bad" and out["rows"][1]["tone"] == ""
     assert out["callouts"][0]["line"] == 1 and out["callouts"][0]["items"][0]["span"] == "1"
+
+
+def test_a_finding_past_the_collected_body_is_listed_not_dropped() -> None:
+    class F:
+        entity_id, audit_id, severity, summary = uuid.uuid7(), "template-injection", "High", "past the end"
+        location = {"row": 40, "end_row": 41}
+
+    out = annotate(["one", "two", "three"], [F()])
+    assert all(r["callout"] is None for r in out["rows"])  # nothing to hang it on
+    assert [c["line"] for c in out["beyond"]] == [41]
+    assert out["beyond"][0]["items"][0]["url"].endswith(str(F.entity_id))

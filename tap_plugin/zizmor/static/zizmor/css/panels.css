@@ -416,8 +416,10 @@
 .tap-zizmor-annot__list { font-size: .85rem; }
 .tap-zizmor-annot__span { opacity: .6; font-size: .78rem; }
 @media (max-width: 900px) {
-    .tap-zizmor-annot__grid { grid-template-columns: 3rem minmax(0, 1fr); }
-    .tap-zizmor-annot__note { grid-column: 2; grid-row: auto !important; margin: .2rem .5rem .5rem 3.5rem; }
+    /* The margin narrows rather than folding: auto-placement would push every note below the
+       whole file (every row's cells already fill columns 1-2), which is worse than a tight margin. */
+    .tap-zizmor-annot__grid { grid-template-columns: 2.6rem minmax(0, 1fr) minmax(9rem, 38%); font-size: .74rem; }
+    .tap-zizmor-annot__note { margin: .1rem .3rem .3rem .4rem; padding-left: .4rem; font-size: .72rem; }
 }
 /* Present for assistive tech and the table's own semantics; not part of the picture. */
 .tap-zizmor-visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap; }

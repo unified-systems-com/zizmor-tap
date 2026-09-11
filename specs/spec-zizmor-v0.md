@@ -615,7 +615,10 @@ call-out in the **right margin, level with the span's first line** — numbered 
 superscript on the line that carries it — naming the audit and zizmor's summary and linking to that
 finding's page. Findings that start on the same line share one call-out block; a block reserves the
 margin rows down to the next block so two notes never overlap (a dense stretch spreads the source a
-little rather than hiding a note). Below 900px the margin folds under the line.
+little rather than hiding a note). Below 900px the margin narrows (folding it under the line would push
+every note below the whole file — grid auto-placement finds no free cell earlier). A finding recorded
+past the end of the collected body — the file changed between the collection and the scan — is listed
+beneath the file with the same link, never dropped.
 
 **Three states, never two.** The latest `SCANNED_WORKFLOW` outcome frames the file: `evaluated` with
 findings ("read this file and left N findings"), `evaluated` with none ("read this file and found
@@ -637,7 +640,7 @@ the severity tone, and the page-template rule — derived once. Panel config: `w
 
 | ACID | Title | Status | Description | Notes |
 | --- | --- | :---: | --- | --- |
-| req-zizmor-panel-workflow-source-1 | Every Finding Marked And Called Out | Implemented | For a workflow with a body and N findings, every span's lines carry a tone and every finding appears in exactly one margin call-out whose link is `/zizmor/finding?finding_id=<its id>`. | `tests/test_zizmor_workflow_source.py` |
+| req-zizmor-panel-workflow-source-1 | Every Finding Marked And Called Out | Implemented | For a workflow with a body and N findings, every span's lines within the body carry a tone and every finding appears in exactly one margin call-out — or, when its line lies past the collected body, in the list beneath the file — whose link is `/zizmor/finding?finding_id=<its id>`. | `tests/test_zizmor_workflow_source.py` (incl. the past-the-body case) |
 | req-zizmor-panel-workflow-source-2 | Notes Never Overlap | Implemented | Call-out blocks are keyed by starting line; each block's grid rows run to the next block's start, so blocks are disjoint. | same |
 | req-zizmor-panel-workflow-source-3 | Not Read Is Not Clean | Implemented | A workflow whose latest scan outcome is not `evaluated` renders the unknown verdict with the recorded reason; one never scanned renders the never-considered verdict; neither renders as an empty clean file. | same |
 | req-zizmor-panel-workflow-source-4 | No Body, Said So | Implemented | A workflow with findings but no collected body lists the findings and says the file cannot be shown. | same |

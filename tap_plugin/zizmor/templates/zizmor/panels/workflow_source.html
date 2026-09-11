@@ -38,6 +38,14 @@
         {% endif %}
         {% endfor %}
     </div>
+    {% if beyond %}
+    <p class="tap-zizmor-src__cap">The scan also recorded {{ beyond|length }} call-out{{ beyond|length|pluralize }} past the end of this {{ rows|length }}-line body — the file changed between the collection that captured it and the scan. Listed here rather than dropped:</p>
+    <ol class="tap-zizmor-annot__list">
+        {% for c in beyond %}{% for it in c.items %}
+        <li><a href="{{ it.url }}"><span class="tap-zizmor-badge tap-zizmor-badge--{{ it.tone }}">{{ it.severity }}</span> {{ it.audit_id }} — {{ it.summary }} <span class="tap-zizmor-annot__span">line {{ it.span }}</span></a></li>
+        {% endfor %}{% endfor %}
+    </ol>
+    {% endif %}
     {% if callouts %}
     <script>
     (function () {

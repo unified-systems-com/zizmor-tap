@@ -149,10 +149,10 @@
                 {
                   "field": "data.location.full_name",
                   "title": "Repository",
-                  "widthGrow": 1,
                   "headerSort": true,
                   "formatter": "tailSegment",
-                  "header_tooltip": "The repository the workflow belongs to (owner on hover). Blank for findings collected before 2026-09-11, until the next run re-observes them."
+                  "header_tooltip": "The repository the workflow belongs to (owner on hover). Blank for findings collected before 2026-09-11, until the next run re-observes them.",
+                  "width": 150
                 },
                 {
                   "field": "data.location.path",

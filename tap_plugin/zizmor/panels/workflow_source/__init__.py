@@ -87,6 +87,7 @@ class ZizmorWorkflowSourcePanelType:
             "has_body": bool(lines),
             "rows": annotated["rows"],
             "callouts": annotated["callouts"],
+            "beyond": annotated["beyond"],
             "workflow_url": workflow_page_url(panel, workflow),
         }
 
@@ -181,13 +182,18 @@ def annotate(lines: list[str], findings: list[ZizmorFinding]) -> dict[str, Any]:
         {"n": i, "text": text, "tone": tone_by_line.get(i, ""), "callout": callout_at.get(i)}
         for i, text in enumerate(lines, start=1)
     ]
-    if callouts and n_lines and callouts[-1]["line"] > n_lines:
-        # A finding past the end of the collected body: the body and the scan disagree (the file
-        # changed between collections). Say so rather than dropping the note.
+    # A finding past the end of the collected body: the body and the scan disagree (the file changed
+    # between collections). It has no row to hang on, so it is handed back separately and the
+    # template lists it under the file — never dropped (req-zizmor-panel-workflow-source-1).
+    beyond = [c for c in callouts if n_lines and c["line"] > n_lines]
+    if beyond:
         logger.warning(
-            "[9c4f] zizmor workflow-source: finding at line %s beyond a %s-line body", callouts[-1]["line"], n_lines
+            "[9c4f] zizmor workflow-source: %s call-out(s) at line %s+ beyond a %s-line body",
+            len(beyond),
+            beyond[0]["line"],
+            n_lines,
         )
-    return {"rows": rows, "callouts": callouts}
+    return {"rows": rows, "callouts": callouts, "beyond": beyond}
 
 
 def severity_rank_of_tone(tone: str) -> int:
