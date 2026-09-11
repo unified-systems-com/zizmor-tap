@@ -29,7 +29,7 @@
         "source": {
           "type": "git",
           "url": "https://github.com/unified-systems-com/tap-plugin-compliance-core",
-          "rev": "v0.2.2"
+          "rev": "v0.3.0"
         },
         "note": "Transitive: a dependency of github_core. Pinned at v0.2.2, the release current on 2026-09-09. Public repo, no credential (req-tap-plugin-arch-source-secret-5)."
       },
@@ -39,7 +39,7 @@
         "source": {
           "type": "git",
           "url": "https://github.com/unified-systems-com/tap-plugin-github-core",
-          "rev": "v0.6.0"
+          "rev": "v0.8.0"
         },
         "note": "Declared in depends_on. Pinned at v0.6.0, the release current on 2026-09-09. Public repo, no credential (req-tap-plugin-arch-source-secret-5)."
       },
@@ -57,7 +57,21 @@
   },
   "population": {
     "on_failure": "abort",
-    "steps": []
+    "steps": [
+      {
+        "type": "seed-plugin",
+        "plugin": "github_core",
+        "bundle": "workflow-page",
+        "enabled": true,
+        "note": "zizmor's workflow page mounts github_core's anatomy panel by edge; the panel must exist before zizmor's pages seed. Only the workflow page — the repo-landing bundle stays out."
+      },
+      {
+        "type": "seed-plugin",
+        "plugin": "zizmor",
+        "enabled": true,
+        "note": "zizmor's own pages and schedule."
+      }
+    ]
   },
   "fips_waivers": [
     {

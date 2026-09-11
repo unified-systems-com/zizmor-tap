@@ -392,3 +392,10 @@ def test_the_raw_scanner_assertion_is_kept_verbatim() -> None:
 def test_route_rendering_handles_keys_and_indices() -> None:
     assert render_route([{"Key": "jobs"}, {"Key": "build"}, {"Key": "steps"}, {"Index": 0}]) == "jobs/build/steps/0"
     assert render_route([]) == ""
+
+
+def test_decompose_carries_the_workflow_identity_onto_the_location() -> None:
+    result = decompose(_finding(), workflow_path=".github/workflows/ci.yml", full_name="acme/repo", workflow_id=42)
+    assert result.location["full_name"] == "acme/repo" and result.location["workflow_id"] == 42
+    bare = decompose(_finding(), workflow_path=".github/workflows/ci.yml")
+    assert bare.location["full_name"] is None and bare.location["workflow_id"] is None

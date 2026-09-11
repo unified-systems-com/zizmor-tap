@@ -5,6 +5,7 @@
     {% if state == "found" %}
     <article class="tap-zizmor-finding">
 
+        {% if show_head %}
         <header class="tap-zizmor-finding__head {% if is_loud %}tap-zizmor-finding__head--loud{% endif %}">
             {# The rule slug is zizmor's name for this, not the reader's. Lead with what is wrong. #}
             <p class="tap-zizmor-finding__rule">
@@ -35,6 +36,7 @@
         </dl>
 
         {# What to change, second — this is a security finding and the fix is the point of the page. #}
+        {% endif %}{% if show_body %}
         <section class="tap-zizmor-finding__section tap-zizmor-finding__section--do">
             <h4>What to change</h4>
             {% if fixes %}
@@ -91,7 +93,7 @@
                 {% if bearing.same_file %}
                 <li>
                     <span class="tap-zizmor-bearing__k">This file</span>
-                    <span class="tap-zizmor-bearing__v">carries {{ bearing.same_file }} other finding{{ bearing.same_file|pluralize }} — worth fixing in one pass</span>
+                    <span class="tap-zizmor-bearing__v">carries {{ bearing.same_file }} other finding{{ bearing.same_file|pluralize }} — worth fixing in one pass{% if file_page_url %} · <a href="{{ file_page_url }}">see them on the file</a>{% endif %}</span>
                 </li>
                 {% endif %}
             </ul>
@@ -219,6 +221,7 @@
         No finding with id <code>{{ requested }}</code> is on this grid. It may have been from a run that has since
         been removed, or the id may be wrong.
     </div>
+        {% endif %}
     {% else %}
     <div class="tap-zizmor-finding__empty">
         Pick a finding to see it in full — every finding on the <a href="/zizmor">zizmor page</a> links here.

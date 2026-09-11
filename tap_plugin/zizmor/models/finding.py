@@ -27,6 +27,14 @@ _LOCATION_SCHEMA: dict[str, Any] = {
     "type": "object",
     "properties": {
         "path": {"type": "string", "description": "Workflow file path inside the repository (.github/workflows/…)."},
+        "full_name": {
+            "type": ["string", "null"],
+            "description": "The repository (owner/name) the workflow belongs to, copied from the workflow row at collection so a findings table can name it without a traversal (zizmor-tap#30). Null on findings collected before the field existed.",
+        },
+        "workflow_id": {
+            "type": ["integer", "null"],
+            "description": "GitHub's numeric workflow id, copied from the workflow row at collection — the key /zizmor/workflow and github_core's workflow page take. Null on findings collected before the field existed.",
+        },
         "route": {"type": "string", "description": "zizmor's symbolic route into the YAML, joined with '/'."},
         "job_key": {"type": ["string", "null"], "description": "The YAML job key the route passes through, if any."},
         "step_index": {

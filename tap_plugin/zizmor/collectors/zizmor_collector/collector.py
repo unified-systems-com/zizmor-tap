@@ -271,7 +271,12 @@ class ZizmorCollector(CollectorBase):
         workflow_endpoint: UUID,
         state: _RunState,
     ) -> None:
-        finding = decompose(raw_finding, workflow_path=workflow.path)
+        finding = decompose(
+            raw_finding,
+            workflow_path=workflow.path,
+            full_name=getattr(workflow, "full_name", "") or "",
+            workflow_id=getattr(workflow, "workflow_id", None),
+        )
         if not finding.audit_id:
             # Provenance-incomplete by req-zizmor-finding-1; a finding with no audit is not one.
             return
