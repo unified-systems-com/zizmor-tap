@@ -1,33 +1,35 @@
+{% load tap_time %}
 <div class="tap-panel tap-panel--zizmor-about">
     {% if not panel.config.hide_header %}{% include "tap_web/panel_header.html" %}{% endif %}
     {% if run %}
     <div class="tap-zizmor-about">
+        {% comment %} An identity bar, not a paragraph: the same one-row-of-headings-over-one-row-of-values shape as the repository page's title table, and for the same reason — there is exactly one run to describe, so a table with sorting or a filter would be furniture around a single fact. The prose that used to open the panel now follows it. {% endcomment %}
+        <table class="tap-zizmor-idbar">
+            <thead>
+                <tr>
+                    <th>Scanner</th>
+                    <th>Persona</th>
+                    <th>Audits run</th>
+                    <th>Did not run</th>
+                    <th>Last run</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>zizmor {{ run.scanner_version }}</td>
+                    <td>{{ run.persona }}</td>
+                    <td>{{ audits_ran }}</td>
+                    <td>{% if skipped_count %}{{ skipped_count }} <span class="tap-zizmor-idbar__aside">— see coverage</span>{% else %}none{% endif %}</td>
+                    <td>{% if run.started_at %}{{ run.started_at|tap_localtime }}{% else %}—{% endif %}</td>
+                </tr>
+            </tbody>
+        </table>
         <p class="tap-zizmor-about__lede">
             <a href="https://docs.zizmor.sh/" target="_blank" rel="noopener noreferrer">zizmor</a>
             is a static analyser for GitHub Actions workflows. TAP runs it <strong>offline</strong>,
             over the workflow YAML already collected onto this grid, and lands each result as a
             finding attached to the workflow it concerns.
         </p>
-        <dl class="tap-zizmor-about__facts">
-            <div><dt>Scanner</dt><dd>zizmor {{ run.scanner_version }}</dd></div>
-            <div><dt>Persona</dt><dd>{{ run.persona }}</dd></div>
-            <div><dt>Audits run</dt><dd>{{ audits_ran }}</dd></div>
-            <div><dt>Last run</dt><dd>{{ run.started_at|default:"—" }}</dd></div>
-        </dl>
-        {% if skipped %}
-        <div class="tap-zizmor-about__skipped">
-            <h4>{{ skipped|length }} audit{{ skipped|length|pluralize }} did not run</h4>
-            <p class="tap-zizmor-about__caveat">
-                These need a GitHub API token, so this offline run could not perform them. Their
-                findings are <strong>unknown</strong> for every workflow — not zero.
-            </p>
-            <ul>
-                {% for audit in skipped %}
-                <li><code>{{ audit.audit_id }}</code> <span>{{ audit.reason }}</span></li>
-                {% endfor %}
-            </ul>
-        </div>
-        {% endif %}
     </div>
     {% else %}
     <div class="tap-zizmor-about__empty">

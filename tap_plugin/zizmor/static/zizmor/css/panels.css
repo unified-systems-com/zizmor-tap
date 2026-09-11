@@ -263,3 +263,117 @@
     line-height: 1.5;
     padding: 0.5rem 0;
 }
+
+/* Finding detail: the rule slug is an eyebrow, the summary is the headline, the scanner's own
+   observation is the standfirst, and the determinations are one quiet line rather than three chips. */
+.tap-zizmor-finding__rule { margin: 0 0 .15rem; font-size: .78rem; letter-spacing: .04em; text-transform: uppercase; opacity: .75; }
+.tap-zizmor-finding__rule a { text-decoration: none; }
+.tap-zizmor-finding__rule a:hover { text-decoration: underline; }
+.tap-zizmor-finding__annotation { margin: .35rem 0 0; font-size: 1rem; }
+.tap-zizmor-finding__determinations { display: flex; align-items: center; gap: .5rem; margin: .55rem 0 0; }
+.tap-zizmor-finding__determ-rest { font-size: .82rem; opacity: .7; cursor: help; }
+.tap-zizmor-finding__section--do { border-left: 3px solid currentColor; padding-left: .9rem; }
+.tap-zizmor-finding__place { margin: .2rem 0; }
+.tap-zizmor-finding__span { opacity: .7; }
+.tap-zizmor-finding__prov { margin-top: 1.1rem; font-size: .9rem; }
+.tap-zizmor-finding__prov > summary { cursor: pointer; opacity: .75; }
+
+/* ONE TYPE SCALE. The page previously ran tiny-caps -> 1.05rem -> 1rem -> 0.82rem -> tiny-caps,
+   so section headings were SMALLER than the body they introduced and shouted in capitals to make
+   up for it. Headings now step down by size and weight; capitals are reserved for the eyebrow. */
+.tap-zizmor-finding__head h3 { font-size: 1.55rem; line-height: 1.2; font-weight: 600; letter-spacing: -0.01em; margin: .1rem 0 0; text-transform: none; }
+.tap-zizmor-finding__rule { font-size: .72rem; }
+.tap-zizmor-finding__annotation { font-size: 1.02rem; opacity: .82; margin-top: .4rem; }
+.tap-zizmor-finding__determinations { margin-top: .7rem; }
+.tap-zizmor-finding__section h4 { font-size: 1.02rem; font-weight: 600; letter-spacing: 0; text-transform: none; margin: 0 0 .45rem; }
+.tap-zizmor-finding__section { margin-top: 1.5rem; padding-top: 1.1rem; border-top: 1px solid rgba(128,128,128,.22); }
+.tap-zizmor-finding__section--do { border-top: 1px solid rgba(128,128,128,.22); border-left: none; padding-left: 0; }
+.tap-zizmor-finding__meaning { font-size: .88rem; opacity: .72; }
+
+/* Bearing: a key/value ladder, aligned, so the four signals read as one block. */
+.tap-zizmor-bearing { list-style: none; margin: .6rem 0 0; padding: 0; display: grid; gap: .3rem; }
+.tap-zizmor-bearing li { display: grid; grid-template-columns: 8.5rem 1fr; gap: .8rem; align-items: baseline; }
+.tap-zizmor-bearing__k { font-size: .78rem; text-transform: uppercase; letter-spacing: .05em; opacity: .6; }
+.tap-zizmor-bearing__v { font-size: .95rem; }
+
+/* Title Case the headline in CSS, not with Django's `title` filter. The filter lowercases the
+   rest of every word, so "use GitHub's dedicated self-repository syntax" becomes "Use Github'S
+   Dedicated ..." — it breaks GitHub and mangles the apostrophe. `capitalize` only raises the
+   first letter of each word and leaves the rest of the string alone. */
+.tap-zizmor-finding__head h3 { text-transform: capitalize; }
+
+/* COVERAGE — an inventory, not a summary. The grouped lists could only show the first 8 of each
+   bucket and then said "and 32 more", so the panel claimed to be a coverage report while hiding
+   most of the coverage. One row per workflow, scrolled, with the outcome carried by a left rule
+   rather than a fourth colour. Type scale matches the finding page. */
+.tap-zizmor-coverage__lede { font-size: 1.02rem; }
+.tap-zizmor-cov-legend { list-style: none; display: flex; flex-wrap: wrap; gap: 1.4rem; margin: .9rem 0 .6rem; padding: 0; }
+.tap-zizmor-cov-legend__item { display: flex; align-items: baseline; gap: .45rem; padding-left: .6rem; border-left: 3px solid transparent; }
+.tap-zizmor-cov-legend__item--unknown { border-left-color: #a15c00; }
+.tap-zizmor-cov-legend__item--observed { border-left-color: #1f7a3a; }
+.tap-zizmor-cov-legend__n { font-size: 1.25rem; font-weight: 600; font-variant-numeric: tabular-nums; }
+.tap-zizmor-cov-legend__l { font-size: .82rem; opacity: .72; }
+
+.tap-zizmor-cov-scroll { max-height: 22rem; overflow: auto; border: 1px solid rgba(128,128,128,.22); border-radius: 3px; }
+.tap-zizmor-cov { width: 100%; border-collapse: collapse; font-size: .88rem; }
+.tap-zizmor-cov thead th { position: sticky; top: 0; z-index: 1; text-align: left; font-size: .72rem;
+    text-transform: uppercase; letter-spacing: .05em; opacity: .65; font-weight: 600;
+    padding: .5rem .7rem; background: Canvas; border-bottom: 1px solid rgba(128,128,128,.28); }
+.tap-zizmor-cov td { padding: .34rem .7rem; vertical-align: top; border-bottom: 1px solid rgba(128,128,128,.12); }
+.tap-zizmor-cov__r--unknown td:first-child { box-shadow: inset 3px 0 0 #a15c00; }
+.tap-zizmor-cov__r--observed td:first-child { box-shadow: inset 3px 0 0 #1f7a3a; }
+.tap-zizmor-cov__wf code { font-size: .84rem; }
+.tap-zizmor-cov__out { white-space: nowrap; opacity: .8; }
+.tap-zizmor-cov__why { opacity: .68; }
+
+.tap-zizmor-cov-audits { margin-top: 1.3rem; padding-top: 1rem; border-top: 1px solid rgba(128,128,128,.22); }
+.tap-zizmor-cov-audits h4 { font-size: 1.02rem; font-weight: 600; text-transform: none; letter-spacing: 0; margin: 0 0 .35rem; }
+.tap-zizmor-cov-audits__list { list-style: none; margin: .5rem 0 0; padding: 0; display: grid; gap: .25rem; }
+.tap-zizmor-cov-audits__list li { display: grid; grid-template-columns: 14rem 1fr; gap: .8rem; font-size: .88rem; }
+.tap-zizmor-cov-audits__list span { opacity: .68; }
+
+/* One line per workflow: the name is the identifier, so it truncates with the full value in the
+   title rather than wrapping and halving how many rows a scroll shows. */
+.tap-zizmor-cov { table-layout: fixed; }
+.tap-zizmor-cov th:nth-child(1), .tap-zizmor-cov td:nth-child(1) { width: 55%; }
+.tap-zizmor-cov th:nth-child(2), .tap-zizmor-cov td:nth-child(2) { width: 14rem; }
+.tap-zizmor-cov__wf { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tap-zizmor-cov td { vertical-align: middle; }
+.tap-zizmor-cov-legend__item { align-items: baseline; }
+.tap-zizmor-cov-legend__l { display: flex; flex-direction: column; }
+.tap-zizmor-cov-legend__why { font-size: .76rem; opacity: .6; max-width: 34rem; }
+
+/* IDENTITY BAR — one row of headings over one row of values, matching the repository page's title
+   table. There is one run to describe, so this is a statement, not a dataset: no sort, no filter,
+   no chrome. It leads the page because a wall of lowercase prose is a bad first impression. */
+.tap-zizmor-idbar { width: 100%; border-collapse: collapse; margin: 0 0 1rem; }
+.tap-zizmor-idbar thead th { text-align: left; font-size: .7rem; font-weight: 600; text-transform: uppercase;
+    letter-spacing: .06em; opacity: .6; padding: 0 1.2rem .3rem 0; white-space: nowrap; }
+.tap-zizmor-idbar tbody td { font-size: 1.02rem; padding: .1rem 1.2rem .55rem 0; white-space: nowrap;
+    border-bottom: 1px solid rgba(128,128,128,.22); }
+.tap-zizmor-idbar thead th:last-child, .tap-zizmor-idbar tbody td:last-child { padding-right: 0; width: 100%; }
+.tap-zizmor-idbar__aside { font-size: .8rem; opacity: .6; }
+.tap-zizmor-about__lede { font-size: .9rem; opacity: .72; margin: 0; max-width: 62ch; }
+
+/* SUBJECT — what this finding is about, before any judgement about it. */
+.tap-zizmor-subject { display: grid; grid-template-columns: repeat(auto-fit, minmax(13rem, auto)); gap: .1rem 2.4rem;
+    margin: 1.1rem 0 0; padding-bottom: 1rem; border-bottom: 1px solid rgba(128,128,128,.22); }
+.tap-zizmor-subject dt { font-size: .7rem; text-transform: uppercase; letter-spacing: .06em; opacity: .6; }
+.tap-zizmor-subject dd { margin: .1rem 0 0; font-size: 1rem; }
+.tap-zizmor-doclink { display: inline-block; margin-top: .3rem; font-weight: 600; }
+
+/* SOURCE — the whole workflow, numbered, with the flagged span marked and scrolled into view.
+   No syntax-highlighting library: numbering is a table column, the mark is a class, and opening
+   at the finding is one scrollTop. A highlighter would be the only reason to add a dependency. */
+.tap-zizmor-src { max-height: 26rem; overflow: auto; border: 1px solid rgba(128,128,128,.22); border-radius: 3px; }
+.tap-zizmor-src__cap { font-size: .82rem; opacity: .66; margin: .5rem 0 .35rem; }
+.tap-zizmor-src__t { width: 100%; border-collapse: collapse; font-size: .82rem; line-height: 1.5; }
+.tap-zizmor-src__n { width: 3.2rem; text-align: right; padding: 0 .7rem 0 .5rem; user-select: none;
+    opacity: .38; font-variant-numeric: tabular-nums; vertical-align: top; }
+.tap-zizmor-src__c { padding: 0 .7rem 0 0; white-space: pre; }
+.tap-zizmor-src__c code { font-size: inherit; background: none; border: 0; padding: 0; }
+.tap-zizmor-src__l--hit { background: rgba(161, 92, 0, .13); }
+.tap-zizmor-src__l--hit .tap-zizmor-src__n { opacity: .8; font-weight: 600; box-shadow: inset 3px 0 0 #a15c00; }
+
+/* Present for assistive tech and the table's own semantics; not part of the picture. */
+.tap-zizmor-visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap; }

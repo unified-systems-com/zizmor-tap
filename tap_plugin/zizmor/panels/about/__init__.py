@@ -8,8 +8,10 @@ one moment — and asking the binary now would report today's installed version 
 some other version produced. The collector reads it once at run start and records it; this reads
 what was recorded.
 
-The five audits zizmor cannot run offline are shown with the reason the binary itself gave, because
-"36 audits ran" alone invites the reading that the other five found nothing.
+The audits zizmor could not run offline are NOT here: they moved to the coverage panel, which is
+where "unknown, not zero" is already argued for workflows. An audit that could not run and a
+workflow that was never read are the same claim about the same run, and splitting them put half
+the story above the findings table and half below it.
 """
 
 from __future__ import annotations
@@ -39,18 +41,11 @@ class ZizmorAboutPanelType:
         if run is None:
             # Not an error state: a grid where the collector has never run is a legitimate,
             # readable condition, and saying so beats an empty panel that looks broken.
-            return {"run": None, "audits_ran": 0, "skipped": []}
+            return {"run": None, "audits_ran": 0, "skipped_count": 0}
 
-        # `tags.skipped_audit_reasons` carries the binary's own words per audit; fall back to the
-        # bare list when an older run predates the tag rather than dropping the audits entirely.
-        reasons: dict[str, str] = (run.tags or {}).get("skipped_audit_reasons") or {}
-        skipped = [
-            {"audit_id": audit, "reason": reasons.get(audit, "not available offline")}
-            for audit in sorted(run.skipped_audits or [])
-        ]
         return {
             "run": run,
             "audits_ran": len(run.audit_set or []),
-            "skipped": skipped,
+            "skipped_count": len(run.skipped_audits or []),
             "audit_set": sorted(run.audit_set or []),
         }

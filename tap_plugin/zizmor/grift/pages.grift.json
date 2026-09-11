@@ -6,15 +6,15 @@
   "batches": [
     {
       "batch_entity": {
-        "entity_id": "01a08cf7-e07f-728e-9cc3-c0c0abbe202f",
+        "entity_id": "01a08d89-03ab-74da-b7db-08fa56f1d3d8",
         "entity_type": "batch",
-        "name": "zizmor Pages v0.2.0",
+        "name": "zizmor Pages v0.3.0",
         "dimensions": {}
       },
       "batch_node": {
         "source": "plugins.zizmor.grift.pages",
-        "name": "zizmor Pages v0.2.0",
-        "description": "Seeds /zizmor (about, findings, coverage, runs) and /zizmor/finding \u2014 one finding in full, reached from any audit cell on the findings table. See req-zizmor-page-landing and req-zizmor-page-finding."
+        "name": "zizmor Pages v0.3.0",
+        "description": "Seeds /zizmor (about, findings, coverage, runs) and /zizmor/finding — one finding in full, reached from any audit cell on the findings table. See req-zizmor-page-landing and req-zizmor-page-finding. v0.3.0 (zizmor-tap#31): the findings table's badges actually render — tone maps for severity and confidence (Low only), datetime formatters on both timestamps, the stray column-level capitalize gone; /zizmor/finding leaves the navigation (it needs ?finding_id=); the finding-detail panel gains workflow_page_template, /github_core/workflow?workflow_id={workflow_id}, the key that page takes since tap-plugin-github-core#101. Panel and page node upserts; every id stable, batch id moved."
       },
       "nodes": [
         {
@@ -101,7 +101,7 @@
                   "title": "Audit",
                   "width": 200,
                   "headerSort": true,
-                  "header_tooltip": "zizmor's own name for the rule that fired. Click through for the finding in full \u2014 where it is, what the job it sits in is permitted to do, and how long it has been there.",
+                  "header_tooltip": "zizmor's own name for the rule that fired. Click through for the finding in full — where it is, what the job it sits in is permitted to do, and how long it has been there.",
                   "formatter": "link",
                   "formatter_params": {
                     "href_template": "/zizmor/finding?finding_id={data.entity_id}"
@@ -114,8 +114,15 @@
                   "align": "center",
                   "headerSort": true,
                   "formatter": "toneBadge",
-                  "capitalize": true,
-                  "header_tooltip": "zizmor's severity for this finding: High, Medium, Low, Informational, or Unknown."
+                  "header_tooltip": "zizmor's severity for this finding: High, Medium, Low, Informational, or Unknown.",
+                  "formatter_params": {
+                    "tones": {
+                      "High": "bad",
+                      "Medium": "warn",
+                      "Low": "muted",
+                      "Informational": "muted"
+                    }
+                  }
                 },
                 {
                   "field": "data.confidence",
@@ -124,8 +131,12 @@
                   "align": "center",
                   "headerSort": true,
                   "formatter": "toneBadge",
-                  "capitalize": true,
-                  "header_tooltip": "How sure zizmor is. Low confidence is not a false positive, but it is a hint about reading order."
+                  "header_tooltip": "How sure zizmor is. Only Low is marked — it is the one value that changes how you read the finding. Low confidence is not a false positive, but it is a hint about reading order.",
+                  "formatter_params": {
+                    "tones": {
+                      "Low": "warn"
+                    }
+                  }
                 },
                 {
                   "field": "data.persona",
@@ -153,21 +164,23 @@
                   "field": "data.location.subfeature",
                   "title": "Fragment",
                   "width": 160,
-                  "header_tooltip": "The exact expression the finding is about, when zizmor narrowed to one \u2014 far more useful than the whole run: block it sits in."
+                  "header_tooltip": "The exact expression the finding is about, when zizmor narrowed to one — far more useful than the whole run: block it sits in."
                 },
                 {
                   "field": "data.observed_at",
                   "title": "Observed",
                   "width": 170,
                   "headerSort": true,
-                  "header_tooltip": "When the most recent run saw this finding."
+                  "header_tooltip": "When the most recent run saw this finding.",
+                  "formatter": "datetime"
                 },
                 {
                   "field": "data.known_since",
                   "title": "Known since",
                   "width": 170,
                   "headerSort": true,
-                  "header_tooltip": "When this finding was FIRST seen. It does not reset when a later run re-observes the same finding, so the gap between the two columns is how long the defect has been there."
+                  "header_tooltip": "When this finding was FIRST seen. It does not reset when a later run re-observes the same finding, so the gap between the two columns is how long the defect has been there.",
+                  "formatter": "datetime"
                 }
               ]
             }
@@ -225,7 +238,7 @@
                   "align": "center",
                   "formatter": "toneBadge",
                   "capitalize": true,
-                  "header_tooltip": "ok: everything the run attempted succeeded. partial: it failed to evaluate something it tried. Workflows with no YAML are counted but do not make a run partial \u2014 that is an upstream gap, not a fault in the run."
+                  "header_tooltip": "ok: everything the run attempted succeeded. partial: it failed to evaluate something it tried. Workflows with no YAML are counted but do not make a run partial — that is an upstream gap, not a fault in the run."
                 },
                 {
                   "field": "data.scanner_version",
@@ -280,7 +293,7 @@
           },
           "node": {
             "name": "zizmor Findings",
-            "description": "Every zizmor finding currently on the grid, newest observation first. Findings are keyed on the assertion (workflow, audit, route, persona, fragment) rather than on the run that saw them, so a re-scan re-observes the same node instead of minting a copy. IMPORTANT, until zizmor-tap#27 lands: the collector never tombstones, so a finding that has since been FIXED still appears here \u2014 this is every finding ever observed, not the current state. Scoping it to the latest run would be worse, because a workflow that run could not read (no-yaml, parse-failed) would silently lose everything previously known about it. What this list cannot say at all is which workflows were never read; that is the coverage panel's job, and a findings list without it renders silence as safety.",
+            "description": "Every zizmor finding currently on the grid, newest observation first. Findings are keyed on the assertion (workflow, audit, route, persona, fragment) rather than on the run that saw them, so a re-scan re-observes the same node instead of minting a copy. IMPORTANT, until zizmor-tap#27 lands: the collector never tombstones, so a finding that has since been FIXED still appears here — this is every finding ever observed, not the current state. Scoping it to the latest run would be worse, because a workflow that run could not read (no-yaml, parse-failed) would silently lose everything previously known about it. What this list cannot say at all is which workflows were never read; that is the coverage panel's job, and a findings list without it renders silence as safety.",
             "search_type": "gryphon",
             "root": "node",
             "definition": {
@@ -348,7 +361,9 @@
                   }
                 }
               }
-            }
+            },
+            "discoverable": false,
+            "description": "Not discoverable: it needs ?finding_id= and has nothing to show without one, so it is reached from the findings table, never from the menu."
           }
         },
         {
@@ -366,7 +381,8 @@
             "view": "zizmor/panels/finding_detail.html",
             "editor_view": "",
             "config": {
-              "hide_header": true
+              "hide_header": true,
+              "workflow_page_template": "/github_core/workflow?workflow_id={workflow_id}"
             }
           }
         }
