@@ -24,6 +24,6 @@ jobs:
       contents: read
       id-token: write
       attestations: write
-    uses: unified-systems-com/tap/.github/workflows/plugin-release-sbom.yml@210409a20ad44e6f747f01bf6da9ccd2cbc04015 # core main 2026-09-02 — pinned like ci.yml: the release/attestation lane must not ride a mutable ref
+    uses: unified-systems-com/tap/.github/workflows/plugin-release-sbom.yml@1ffb2417032350ec1d31f0af400c25b225ee66ca # core main 2026-09-02 — pinned like ci.yml: the release/attestation lane must not ride a mutable ref
     with:
       plugin_slug: zizmor
