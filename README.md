@@ -7,7 +7,7 @@
 ## What this plugin owns
 
 - A **derived, offline collector** (`zizmor:zizmor`): reads the workflow YAML
-  [github_core](https://github.com/unified-systems-com/tap-plugin-github-core) has already
+  [github_core](https://github.com/unified-systems-com/github-core-tap) has already
   landed on the grid, runs the pinned [zizmor](https://docs.zizmor.sh/) binary over it with
   `--offline`, and lands typed findings attached to the workflow and job they concern. No forge
   access, no credential, no network.
