@@ -8,11 +8,10 @@
         "enabled": true,
         "source": {
           "type": "git",
-          "url": "https://github.com/unified-systems-com/tap-plugin-identity-core",
+          "url": "https://github.com/unified-systems-com/identity-core-tap",
           "rev": "v0.1.2",
           "commit": "63da037c77355369f91748127a74c7a17e00a7f9"
-        },
-        "note": "Transitive: a dependency of github_core. Pinned at v0.1.2, the release current on 2026-09-09. Public repo, no credential (req-tap-plugin-arch-source-secret-5)."
+        }
       },
       {
         "slug": "git_core",
@@ -22,30 +21,27 @@
           "url": "https://github.com/unified-systems-com/git-core-tap",
           "rev": "v0.1.0",
           "commit": "efa983a582eaef7d16e27daa50a68aeaef7c56de"
-        },
-        "note": "Transitive: a dependency of github_core. Pinned at v0.1.0, the release current on 2026-09-09. Public repo, no credential (req-tap-plugin-arch-source-secret-5)."
+        }
       },
       {
         "slug": "compliance_core",
         "enabled": true,
         "source": {
           "type": "git",
-          "url": "https://github.com/unified-systems-com/tap-plugin-compliance-core",
+          "url": "https://github.com/unified-systems-com/compliance-core-tap",
           "rev": "v0.3.0",
           "commit": "10871675ff1c67bfac0ca61d90ee12c507fd76f4"
-        },
-        "note": "Transitive: a dependency of github_core. Pinned at v0.2.2, the release current on 2026-09-09. Public repo, no credential (req-tap-plugin-arch-source-secret-5)."
+        }
       },
       {
         "slug": "github_core",
         "enabled": true,
         "source": {
           "type": "git",
-          "url": "https://github.com/unified-systems-com/tap-plugin-github-core",
+          "url": "https://github.com/unified-systems-com/github-core-tap",
           "rev": "v0.8.0",
           "commit": "3e0bf766733269596535c0f2b99d15cada9e1611"
-        },
-        "note": "Declared in depends_on. Pinned at v0.6.0, the release current on 2026-09-09. Public repo, no credential (req-tap-plugin-arch-source-secret-5)."
+        }
       },
       {
         "slug": "zizmor",
@@ -53,10 +49,8 @@
         "source": {
           "type": "git",
           "url": "https://github.com/unified-systems-com/zizmor-tap",
-          "rev": "97190065bff3a88d4c2a2aa52926660708bf167f",
-          "commit": "97190065bff3a88d4c2a2aa52926660708bf167f"
-        },
-        "note": "Self, pinned like any app-of-apps record — the CONSUMER (plugin-ci boot-and-test, or `spawn --dev-plugins zizmor`) substitutes the checkout under test via tap.dev_workspace (req-boot-bootstrap-ci-record-4). Booting this record unflipped runs the pinned revision."
+          "rev": "v0.1.0"
+        }
       }
     ]
   },

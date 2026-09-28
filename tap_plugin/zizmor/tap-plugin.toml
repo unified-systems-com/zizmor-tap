@@ -1,5 +1,5 @@
 manifest_version = "0"
-plugin_version = "0.1.0"
+plugin_version = "0.1.0" # x-release-please-version
 requires_tap = ">=0.1.5"
 slug = "zizmor"
 name = "TAP zizmor"
@@ -49,7 +49,7 @@ FLAGS_ACTION__zizmor = "edges/FLAGS_ACTION.edge.json"
 [[boot.records]]
 name = "ci"
 description = "RESERVED NAME (req-boot-bootstrap-ci-record): the stack this plugin's own tests run in — depends_on closure + self, offline, credential-free. The consumer flips self to editable."
-sha256 = "30b01c8bd8d3b6c8dc0c03bb67095381d1611ba402e8c37d0d6db65cb9621024"
+sha256 = "15b51418f6ed139a9776aa32487056484aa1c8b7ecb5b86d856932061b37bfeb"
 
 # Seeded data this plugin ships. The schedule is owned HERE rather than by a consumer because
 # the finding set is a property of the scanner and its pin, not of any one product's page: a
