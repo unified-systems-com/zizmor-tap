@@ -18,11 +18,11 @@ dynamic = ["version"]
 #   embedded PEP 770 SBOM. Pinned EXACTLY: the collector aborts if `zizmor --version` differs
 #   from this pin (req-zizmor-binary-2). Bumps arrive as Renovate PRs (tap#303) / Dependabot
 #   alerts; never loosen to a range.
-#   tap-plugin-github-core: the collector imports github_core's models to read workflow YAML
+#   github-core-tap: the collector imports github_core's models to read workflow YAML
 #   and resolve workflow/job endpoints — a code + vocabulary dependency (downward-only).
 dependencies = [
     "zizmor==1.30.0",
-    "tap-plugin-github-core",
+    "github-core-tap>=0.14.0,<0.15",
 ]
 
 [project.entry-points."tap.plugins"]
