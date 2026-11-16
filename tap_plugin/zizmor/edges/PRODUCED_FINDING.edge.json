@@ -9,7 +9,7 @@
     "zizmor__finding"
   ],
   "default_dimensions": {
-    "github.platform": "github.com",
+    "git.host": "github.com",
     "github.surface": "actions",
     "github.observation": "declaration"
   }

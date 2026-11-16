@@ -36,7 +36,7 @@ in any table links to its finding page and every run cell to its run page; git-s
 
 | Dimension | Value | Why |
 | --- | --- | --- |
-| `github.platform`, `github.owner`, `github.repo`, `github.surface` | inherited from the workflow's github_core dimensions (`surface = "actions"`) | A finding is scoped exactly as the workflow it flags |
+| `git.host`, `github.owner`, `github.repo`, `github.surface` | inherited from the workflow's github_core dimensions (`surface = "actions"`) | A finding is scoped exactly as the workflow it flags |
 | `github.observation` | `"declaration"` | A finding is about the pipeline as *written* |
 | `zizmor.scanner_version` | the version read from the binary at run time | Findings from two scanner releases are separate partitions and never merge into one fact |
 
@@ -364,6 +364,7 @@ never a shape derived from the absence of a finding.
 | req-zizmor-finding-1 | Provenance Complete | Implemented | Every landed finding has non-empty `audit_id`, `severity`, `confidence`, `scanner_version` and `observed_at`, an edge from its run, and an edge to exactly one workflow. | |
 | req-zizmor-finding-2 | Job Resolution Honest | Implemented | A finding whose location names a job that exists on the grid gets `FLAGS_JOB`; one whose job cannot be resolved gets no job edge and records why in `tags`. | |
 | req-zizmor-finding-3 | Neutral Shape Recorded | Proposed | The model docstring and domain article carry the compliance-node note and name the two Backlog requirements that will force the design. | |
+| req-zizmor-finding-4 | Scoped By `git.host`, Old Rows Renamed | Implemented | Every dimension key the plugin writes has a declared Dimension node: `zizmor.scanner_version` in this plugin's own seed under a pinned id, and each inherited key (`git.host`, `github.owner`, `github.repo`, `github.surface`, `github.observation`) in the seed of the plugin that owns it. The retired `github.platform` key is written nowhere. Migration `0002_rename_github_platform_to_git_host` renames it to `git.host` on zizmor's own node and edge rows, keeps an existing `git.host` value, changes no other plugin's rows, and changes nothing on a second run. | github_core retired `github.platform` on 2026-09-20 (`github-core-tap#168`). Asserted by `test_zizmor_dimension_seed.py`. |
 
 ### Runs Are First-Class
 ----

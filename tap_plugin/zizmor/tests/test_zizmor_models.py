@@ -11,6 +11,7 @@ from tap_plugin.zizmor.models import ZizmorFinding
 
 from tap_grid.models import Entity
 from tap_grid.services import create_node
+from tap_plugin.zizmor.tests.conftest import dimension_view
 
 FINDING = "zizmor__finding"
 RUN = "zizmor__run"
@@ -52,11 +53,11 @@ class TestZizmorFinding:
         entity = Entity.objects.get(id=result.entity_id)
         assert entity.name == "template-injection @ .github/workflows/plugin-ci.yml#conformance"
         for key, value in {
-            "github.platform": "github.com",
+            "git.host": "github.com",
             "github.surface": "actions",
             "github.observation": "declaration",
         }.items():
-            assert entity.dimensions.get(key) == value
+            assert dimension_view(entity).get(key) == value
 
     def test_required_fields_are_enforced(self) -> None:
         payload = _finding_payload()
@@ -110,7 +111,7 @@ class TestZizmorRun:
         assert result.success, result.errors
         entity = Entity.objects.get(id=result.entity_id)
         assert entity.name == "zizmor 1.30.0 (auditor) 2026-09-02 21:40"
-        assert entity.dimensions.get("github.observation") == "declaration"
+        assert dimension_view(entity).get("github.observation") == "declaration"
 
     def test_completed_outcome_requires_evidence_of_a_scan(self) -> None:
         """An `ok` run with no source, no audit set and no coverage is a lie the model refuses."""

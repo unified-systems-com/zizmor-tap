@@ -1,0 +1,38 @@
+{
+  "metadata": {
+    "grift_version": "0"
+  },
+  "_reserved": {},
+  "batches": [
+    {
+      "batch_entity": {
+        "entity_id": "01a1e560-f815-76de-91c6-a31e2d93e99e",
+        "entity_type": "batch",
+        "name": "zizmor dimensions v0.1.0",
+        "dimensions": {}
+      },
+      "batch_node": {
+        "source": "plugins.zizmor",
+        "name": "zizmor dimensions v0.1.0",
+        "description": "Dimension nodes for every dimension key the zizmor plugin owns, so each key has a declared node now that the dimension map is keyed by node id (tap#708, tap#711)."
+      },
+      "nodes": [
+        {
+          "entity": {
+            "entity_id": "01a1e560-f815-76de-91c6-a31f72d40ead",
+            "entity_type": "dimension",
+            "name": "zizmor.scanner_version",
+            "dimensions": {
+              "tap.meta": "dimension"
+            }
+          },
+          "node": {
+            "name": "zizmor.scanner_version",
+            "description": "The zizmor release that produced a run and its findings, read from the binary at run time. Findings from two scanner releases are separate partitions and never merge into one fact (req-zizmor-finding)."
+          }
+        }
+      ],
+      "edges": []
+    }
+  ]
+}
