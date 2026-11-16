@@ -134,3 +134,10 @@ def test_the_migration_renames_the_retired_key_on_zizmor_rows_only() -> None:
     assert ours.dimensions == new and our_edge.dimensions == new
     assert both.dimensions == {"git.host": "ghe.example"}, "a row that already carries git.host keeps that value"
     assert theirs.dimensions == old and their_edge.dimensions == old, "another plugin's rows are not zizmor's to change"
+
+    migration.restore_platform(None, SimpleNamespace(connection=connection))
+    for row in (ours, both, theirs, our_edge, their_edge):
+        row.refresh_from_db()
+    assert ours.dimensions == old and our_edge.dimensions == old, "the reverse puts the old key back"
+    assert both.dimensions == {RETIRED: "ghe.example"}
+    assert theirs.dimensions == old and their_edge.dimensions == old

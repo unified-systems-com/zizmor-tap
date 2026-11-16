@@ -19,7 +19,11 @@ is not encoded as ``run_before`` on core's migration, on purpose: that would mak
 that grids already on the new core have applied, and Django refuses to migrate a database whose applied migration has
 an unapplied dependency. On such a grid this migration finds nothing to do anyway.
 
-Reversing is a no-op.
+Batch rows are not touched: the importer creates a batch's spine row without the batch envelope's dimensions, so no
+batch row carries the key.
+
+Reversing renames the key back on the same rows, so a rollback to migration 0001 leaves the rows as that code writes
+and reads them.
 """
 
 from django.db import migrations
@@ -47,18 +51,21 @@ UPDATE tap_entity AS e
 """
 
 
-def rename_platform(apps, schema_editor):
+def _rename(schema_editor, old: str, new: str) -> None:
     with schema_editor.connection.cursor() as cursor:
         cursor.execute(
             RENAME,
-            {
-                "old": OLD_KEY,
-                "new": NEW_KEY,
-                "prefix": NODE_PREFIX,
-                "suffix_len": len(EDGE_SUFFIX),
-                "suffix": EDGE_SUFFIX,
-            },
+            {"old": old, "new": new, "prefix": NODE_PREFIX, "suffix_len": len(EDGE_SUFFIX), "suffix": EDGE_SUFFIX},
         )
+
+
+def rename_platform(apps, schema_editor):
+    _rename(schema_editor, OLD_KEY, NEW_KEY)
+
+
+def restore_platform(apps, schema_editor):
+    """The reverse: zizmor's rows carry ``github.platform`` again, as the code at migration 0001 writes and reads it."""
+    _rename(schema_editor, NEW_KEY, OLD_KEY)
 
 
 class Migration(migrations.Migration):
@@ -67,5 +74,5 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.RunPython(rename_platform, migrations.RunPython.noop),
+        migrations.RunPython(rename_platform, restore_platform),
     ]
