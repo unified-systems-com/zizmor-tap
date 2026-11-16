@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.2.0](https://github.com/unified-systems-com/zizmor-tap/compare/v0.1.1...v0.2.0) (2026-11-16)
+
+
+### ⚠ BREAKING CHANGES
+
+* zizmor's findings, runs and edges carry git.host where they carried github.platform. A filter on the old key matches nothing.
+
+### Bug Fixes
+
+* **ci-record:** pin the dependency releases that carry their Dimension seeds ([26eb785](https://github.com/unified-systems-com/zizmor-tap/commit/26eb785ad17c136aac213e645e7256e0e3ee87a9))
+* **ci-record:** pin the dependency releases that carry their Dimension seeds ([94aa66f](https://github.com/unified-systems-com/zizmor-tap/commit/94aa66fbe5951143a93c355837a3ab00d44ef92b))
+* scope zizmor's rows by git.host; declare zizmor.scanner_version ([291dfd3](https://github.com/unified-systems-com/zizmor-tap/commit/291dfd3599247fa3f83b5d5ca243df54b969078e))
+* the rename migration reverses for real; say why batch rows are not touched ([984701b](https://github.com/unified-systems-com/zizmor-tap/commit/984701b6ce09b49b62aef7f4e0189771e6c6753c))
+
 ## [0.1.1](https://github.com/unified-systems-com/zizmor-tap/compare/v0.1.0...v0.1.1) (2026-11-05)
 
 
