@@ -73,7 +73,7 @@ EDGE_FLAGS_JOB = "FLAGS_JOB__zizmor"
 EDGE_FLAGS_ACTION = "FLAGS_ACTION__zizmor"
 
 _EDGE_DIMENSIONS = {
-    "github.platform": "github.com",
+    "git.host": "github.com",
     "github.surface": "actions",
     "github.observation": "declaration",
 }
@@ -568,7 +568,7 @@ class ZizmorCollector(CollectorBase):
                 "workflows_no_yaml": state.no_yaml,
                 "findings": len(state.findings),
             },
-            batch_dimensions={"github.platform": "github.com", "zizmor.scanner_version": state.scanner_version},
+            batch_dimensions={"git.host": "github.com", "zizmor.scanner_version": state.scanner_version},
         )
         self.submit_grift(document)
 

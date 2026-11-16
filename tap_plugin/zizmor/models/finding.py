@@ -85,7 +85,7 @@ class ZizmorFinding(BaseModel):
     # Repository scope (`github.owner` / `github.repo`) and `zizmor.scanner_version` are set by the
     # collector per node — they vary per finding — so only the static part lives here.
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {
-        "github.platform": "github.com",
+        "git.host": "github.com",
         "github.surface": "actions",
         "github.observation": "declaration",
     }

@@ -57,5 +57,6 @@ sha256 = "76301b080d2958ffb01030ed6dfcbe8dce6283e53f6f91cd348f76ac1b2c5422"
 # verifies the SCHEDULED_TARGET edge resolves to a registered collector, so a package rename
 # cannot silently dangle it.
 [grift]
+dimension = "grift/dimension.grift.json"
 pages = "grift/pages.grift.json"
 schedule = "grift/schedule.grift.json"

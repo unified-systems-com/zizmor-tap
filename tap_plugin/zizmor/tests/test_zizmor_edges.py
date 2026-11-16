@@ -20,6 +20,7 @@ from tap_grid.exceptions import EdgePropertyValidationError
 from tap_grid.models import Entity
 from tap_grid.registry import get_model_class
 from tap_grid.services import create_edge, create_node
+from tap_plugin.zizmor.tests.conftest import dimension_view
 
 PRODUCED_FINDING = "PRODUCED_FINDING__zizmor"
 SCANNED_WORKFLOW = "SCANNED_WORKFLOW__zizmor"
@@ -28,7 +29,7 @@ FLAGS_JOB = "FLAGS_JOB__zizmor"
 FLAGS_ACTION = "FLAGS_ACTION__zizmor"
 
 EXPECTED_DIMENSIONS = {
-    "github.platform": "github.com",
+    "git.host": "github.com",
     "github.surface": "actions",
     "github.observation": "declaration",
 }
@@ -102,7 +103,7 @@ class TestPropertyFreeEdges:
     def test_default_dimensions_are_applied_when_the_caller_names_none(self) -> None:
         edge = create_edge(_finding().entity, _workflow().entity, FLAGS_WORKFLOW)
         for key, value in EXPECTED_DIMENSIONS.items():
-            assert edge.entity.dimensions.get(key) == value
+            assert dimension_view(edge.entity).get(key) == value
 
 
 @pytest.mark.django_db
