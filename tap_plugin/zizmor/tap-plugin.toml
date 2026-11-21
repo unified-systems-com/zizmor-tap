@@ -1,6 +1,6 @@
 manifest_version = "0"
 plugin_version = "0.2.0" # x-release-please-version
-requires_tap = ">=0.3.1"
+requires_tap = ">=0.4.3"
 slug = "zizmor"
 name = "TAP zizmor"
 description = "GitHub Actions workflow audits, consumed offline onto the grid — zizmor's findings beside the workflows, jobs, rulesets and credentials they concern."
@@ -49,7 +49,7 @@ FLAGS_ACTION__zizmor = "edges/FLAGS_ACTION.edge.json"
 [[boot.records]]
 name = "ci"
 description = "RESERVED NAME (req-boot-bootstrap-ci-record): the stack this plugin's own tests run in — depends_on closure + self, offline, credential-free. The consumer flips self to editable."
-sha256 = "c2c80c80f59b39c77ae07814268df554a84c7973d73d70e61c0760985b2b4606"
+sha256 = "fc3d7ad99ccb2c55ff2af800df7632e746c159a363d0d1d9c8a5b3e94cd28500"
 
 # Seeded data this plugin ships. The schedule is owned HERE rather than by a consumer because
 # the finding set is a property of the scanner and its pin, not of any one product's page: a
