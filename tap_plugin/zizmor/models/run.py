@@ -11,6 +11,7 @@ from django.core.exceptions import ValidationError
 from django.db import models
 from tap_plugin.zizmor.models.finding import PERSONAS
 
+from tap_grid.event_time import NO_EVENT_TIME, NoEventTime
 from tap_grid.models import BaseModel
 
 OUTCOMES: tuple[str, ...] = ("running", "ok", "partial", "failed", "skipped")
@@ -35,6 +36,10 @@ class ZizmorRun(BaseModel):
         "the finding counts its PRODUCED edges must add up to."
     )
     ENTITY_ICON: ClassVar[str] = "zizmor-run"
+    # Event time (req-grid-entity-event-time): none. A run is one execution of this collector, and
+    # started_at / finished_at are its own clock (datetime.now in the collector): collection time,
+    # never declared (rule 13). Both stay typed fields (rule 14).
+    EVENT_TIME: ClassVar[NoEventTime] = NO_EVENT_TIME
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {
         "git.host": "github.com",
         "github.surface": "actions",

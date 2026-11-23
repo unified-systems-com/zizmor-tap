@@ -13,6 +13,7 @@ from typing import Any, ClassVar
 
 from django.db import models
 
+from tap_grid.event_time import NO_EVENT_TIME, NoEventTime
 from tap_grid.models import BaseModel
 
 SEVERITIES: tuple[str, ...] = ("Unknown", "Informational", "Low", "Medium", "High")
@@ -82,6 +83,10 @@ class ZizmorFinding(BaseModel):
         "rides every finding."
     )
     ENTITY_ICON: ClassVar[str] = "zizmor-finding"
+    # Event time (req-grid-entity-event-time): none. zizmor's json-v1 finding carries no time, and
+    # known_since / observed_at are this collector's own clock at the run that first / last saw it:
+    # collection time, never declared (rule 13). Both stay typed fields (rule 14).
+    EVENT_TIME: ClassVar[NoEventTime] = NO_EVENT_TIME
     # Repository scope (`github.owner` / `github.repo`) and `zizmor.scanner_version` are set by the
     # collector per node — they vary per finding — so only the static part lives here.
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {
