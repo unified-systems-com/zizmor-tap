@@ -39,8 +39,8 @@
         "source": {
           "type": "git",
           "url": "https://github.com/unified-systems-com/computing-core-tap",
-          "rev": "v0.10.8",
-          "commit": "f244539e7626cb8996238b32a53f0010eafe09d0"
+          "rev": "v0.11.0",
+          "commit": "e80e953802aac9974a4d33bf9c140dd9f1bb9dfe"
         }
       },
       {
@@ -59,8 +59,8 @@
         "source": {
           "type": "git",
           "url": "https://github.com/unified-systems-com/github-core-tap",
-          "rev": "v0.14.1",
-          "commit": "f4ac200fcc2a2b4d51ed3900dd22184598f05937"
+          "rev": "v0.14.2",
+          "commit": "ea5bca7c64f9c26d6fb065816650fdc256533021"
         }
       },
       {
