@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.2.1](https://github.com/unified-systems-com/zizmor-tap/compare/v0.2.0...v0.2.1) (2026-11-24)
+
+
+### Features
+
+* declare event time for every model (tap v0.4.7) ([3d416db](https://github.com/unified-systems-com/zizmor-tap/commit/3d416dbc80752c49399a33ae340e1f1b3d356432))
+* declare event time for every model (tap v0.4.7) ([ca76684](https://github.com/unified-systems-com/zizmor-tap/commit/ca76684658ec6be568a4f964538ca193fb46d806))
+* tap v0.4.9 — spine copies migration, format "1" documents ([5c94b3b](https://github.com/unified-systems-com/zizmor-tap/commit/5c94b3bd37a7de1af28ccdafefd4d8cff6bca3f7))
+* tap v0.4.9 — spine copies migration, format "1" documents ([071dd2a](https://github.com/unified-systems-com/zizmor-tap/commit/071dd2a91716368fdeecd9a38c7e738ec3e60a31))
+
 ## [0.2.0](https://github.com/unified-systems-com/zizmor-tap/compare/v0.1.1...v0.2.0) (2026-11-16)
 
 
