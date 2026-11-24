@@ -122,9 +122,9 @@ def test_the_migration_renames_the_retired_key_on_zizmor_rows_only() -> None:
     with connection.cursor() as cursor:
         for edge, edge_type in ((our_edge, "FLAGS_WORKFLOW__zizmor"), (their_edge, "DEFINES_JOB__github_core")):
             cursor.execute(
-                "INSERT INTO tap_edge (batch_id, flip_map, edge_type, properties, entity_id, from_entity_id, to_entity_id)"
-                " VALUES (%s, '{}', %s, '{}', %s, %s, %s)",
-                ["test", edge_type, edge.pk, ours.pk, theirs.pk],
+                "INSERT INTO tap_edge (flip_map, edge_type, properties, entity_id, from_entity_id, to_entity_id)"
+                " VALUES ('{}', %s, '{}', %s, %s, %s)",
+                [edge_type, edge.pk, ours.pk, theirs.pk],
             )
     for _ in range(2):  # a second run changes nothing
         migration.rename_platform(None, SimpleNamespace(connection=connection))
