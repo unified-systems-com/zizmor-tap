@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.2.2](https://github.com/unified-systems-com/zizmor-tap/compare/v0.2.1...v0.2.2) (2026-11-25)
+
+
+### Bug Fixes
+
+* **grift:** the collector writes core's format "1" header instead of "0" ([7648ce5](https://github.com/unified-systems-com/zizmor-tap/commit/7648ce529959bc22899ca32f749bef7f1e5c6a87))
+* **grift:** the collector writes core's format "1" header instead of "0" ([235262b](https://github.com/unified-systems-com/zizmor-tap/commit/235262bda4979f2f495337e897dcb4b7d1282ccb))
+
 ## [0.2.1](https://github.com/unified-systems-com/zizmor-tap/compare/v0.2.0...v0.2.1) (2026-11-24)
 
 
