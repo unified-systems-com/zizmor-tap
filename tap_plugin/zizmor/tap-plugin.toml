@@ -1,6 +1,6 @@
 manifest_version = "0"
 plugin_version = "0.2.2" # x-release-please-version
-requires_tap = ">=0.4.9"
+requires_tap = ">=0.5.0"  # 0004_history_event_time depends on tap_grid 0024 (core v0.5.0: event time on history rows)
 slug = "zizmor"
 name = "TAP zizmor"
 description = "GitHub Actions workflow audits, consumed offline onto the grid — zizmor's findings beside the workflows, jobs, rulesets and credentials they concern."
@@ -49,7 +49,7 @@ FLAGS_ACTION__zizmor = "edges/FLAGS_ACTION.edge.json"
 [[boot.records]]
 name = "ci"
 description = "RESERVED NAME (req-boot-bootstrap-ci-record): the stack this plugin's own tests run in — depends_on closure + self, offline, credential-free. The consumer flips self to editable."
-sha256 = "c3af8dc724a55119c6b0fe45dcdec95f59f220ce4544b854c052fb0861278c7b"
+sha256 = "a15627b866cf24380fce3d706d21a2ed2dbbb4bbad073a8c97e73f6214772e00"
 
 # Seeded data this plugin ships. The schedule is owned HERE rather than by a consumer because
 # the finding set is a property of the scanner and its pin, not of any one product's page: a
