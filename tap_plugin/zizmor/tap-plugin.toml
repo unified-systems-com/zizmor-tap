@@ -49,7 +49,7 @@ FLAGS_ACTION__zizmor = "edges/FLAGS_ACTION.edge.json"
 [[boot.records]]
 name = "ci"
 description = "RESERVED NAME (req-boot-bootstrap-ci-record): the stack this plugin's own tests run in — depends_on closure + self, offline, credential-free. The consumer flips self to editable."
-sha256 = "c3af8dc724a55119c6b0fe45dcdec95f59f220ce4544b854c052fb0861278c7b"
+sha256 = "6f61441966921692f45b410c66cb41b6246c7e9e9f3b559651bb9ed93032afac"
 
 # Seeded data this plugin ships. The schedule is owned HERE rather than by a consumer because
 # the finding set is a property of the scanner and its pin, not of any one product's page: a
