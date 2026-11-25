@@ -340,3 +340,15 @@ def test_the_vendored_corpus_is_byte_identical_to_upstream() -> None:
     assert set(manifest["files"]) == {
         p.name for p in CORPUS_DIR.glob("*.yml")
     }, "provenance.json and the vendored files disagree about which files exist"
+
+
+def test_the_batch_carries_cores_format_1_header(db: None) -> None:
+    """The run's document states its versions (format "1", tap#1284); core 0.5.0 refuses format "0"."""
+    from tap_plugin.zizmor.collectors.zizmor_collector.batch import assemble_batch
+
+    from tap_grid.grift.upgrade import build_header
+
+    document = assemble_batch(batch_name="zizmor audit", description="", nodes=[], edges=[], summary={})
+
+    assert document["metadata"]["grift_version"] == "1"
+    assert document["metadata"] == build_header(document)
