@@ -1,6 +1,7 @@
 """GRIFT envelope + batch assembly for the zizmor collector.
 
-Document shape per `tap_grid/schemas/grift-document.schema.json`. One run submits one batch.
+Document shape per `tap_grid/schemas/grift-document.schema.json`. One run submits one batch, under
+the GRIFT format "1" header core writes for it (`tap_grid.grift.upgrade.build_header`).
 
 These three helpers are the same shape every collector builds by hand, because core publishes no
 envelope builder — the GRIFT envelope's structure is currently authored independently in each
@@ -15,7 +16,6 @@ from typing import Any
 from uuid import UUID, uuid7
 
 COLLECTION_FORMAT = "tap.zizmor.collection-v0"
-_GRIFT_VERSION = "0"
 
 
 def node_envelope(
@@ -73,7 +73,13 @@ def assemble_batch(
     summary: dict[str, Any],
     batch_dimensions: dict[str, str] | None = None,
 ) -> dict[str, Any]:
-    """Wrap nodes + edges into a single-batch GRIFT v0 document."""
+    """Wrap nodes + edges into a single-batch GRIFT document with core's format "1" header.
+
+    The header states the spine version and the version of every type the batch carries, read off
+    the grid, so this needs the database; the collector only calls it inside a run.
+    """
+    from tap_grid.grift.upgrade import build_header
+
     moment = datetime.now(UTC).isoformat().replace("+00:00", "Z")
     batch = {
         "batch_entity": {
@@ -96,8 +102,6 @@ def assemble_batch(
         "nodes": nodes,
         "edges": edges,
     }
-    return {
-        "metadata": {"grift_version": _GRIFT_VERSION},
-        "_reserved": {},
-        "batches": [batch],
-    }
+    document: dict[str, Any] = {"metadata": {}, "_reserved": {}, "batches": [batch]}
+    document["metadata"] = build_header(document)
+    return document
