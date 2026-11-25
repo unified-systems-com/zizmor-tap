@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.2.3](https://github.com/unified-systems-com/zizmor-tap/compare/v0.2.2...v0.2.3) (2026-11-25)
+
+
+### Bug Fixes
+
+* ship the history event-time migration on the tap v0.5.0 floor ([a56d55c](https://github.com/unified-systems-com/zizmor-tap/commit/a56d55cca6040499af2d88118cee4b0f08b22c3b))
+* ship the history event-time migration on the tap v0.5.0 floor ([1975bc4](https://github.com/unified-systems-com/zizmor-tap/commit/1975bc4a3998a7f6d264229fee00691fd23bebc6))
+
 ## [0.2.2](https://github.com/unified-systems-com/zizmor-tap/compare/v0.2.1...v0.2.2) (2026-11-25)
 
 
